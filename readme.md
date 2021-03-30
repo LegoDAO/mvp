@@ -63,6 +63,9 @@ The Deployment process goes rougly like this:
 
 ## Changes made from Compound GovernorAlpha.sol
 
+This is a stripped-down version of GovernorAlpha -
+
+- basically, we only kept the "propose - vote -execute" flow
 - upgrade to solidity 0.7.3, which required some changes in syntax
 - call `token.balanceOfAt()` instead of `token.getPriorVotes()`
 - add configuration options to the constructor:
