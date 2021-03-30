@@ -49,16 +49,6 @@ Run the tests
 yarn test
 ```
 
-## Deploy your contracts
-
-The Deployment process goes rougly like this:
-
-1. deploy (or choose an existing) source for Voting Power - this is typically a ERC20 token contract or a locking scheme.
-   For this MVP, the token contract MUST be "snapshottable" - meaning that it must implement [the MiniMe interface](./contracts/interfaces/ERC20MiniMe.sol)
-2. deploy (or choose an existing) Gnosis Safe
-3. deploy a Decision Engine, linking it to the Voting Power Source and Gnosis Safe deployed in the previous step
-4. give the Decision Engine the power to propose(..), approveHash(..) and execute(...)
-
 # Main contracts in this repository
 
 ## Changes made from Compound GovernorAlpha.sol
