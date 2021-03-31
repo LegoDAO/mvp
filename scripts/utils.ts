@@ -1,5 +1,6 @@
 import { Address } from "hardhat-deploy/types";
 import { Contract, Transaction } from "ethers";
+import { ethers } from "hardhat";
 
 export const ZEROADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -83,3 +84,8 @@ export const safeExecuteByOwner = async (
     throw Error("ExecutionFailure when trying to execute ... ");
   }
 };
+
+export function encodeParameters(types: string[], values: string[]) {
+  const abi = new ethers.utils.AbiCoder();
+  return abi.encode(types, values);
+}

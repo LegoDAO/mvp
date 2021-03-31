@@ -1,11 +1,12 @@
 pragma solidity ^0.7.3;
 pragma experimental ABIEncoderV2;
 
-import "./interfaces/IMiniMetoken.sol";
-import "./interfaces/IGnosisSafe.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../interfaces/IMiniMetoken.sol";
+import "../interfaces/IGnosisSafe.sol";
+import "../interfaces/IERC20Snapshot.sol";
 
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 /**
   An adaptation of the GovernorAlpha contract
@@ -44,7 +45,8 @@ contract DecisionEngine01 {
   IGnosisSafe public safe;
 
   /// @notice The address of the governance token
-  IMiniMetoken public token;
+  address public token;
+  TokenType public tokenType;
 
   /// @notice The total number of proposals
   uint256 public proposalCount;
@@ -77,6 +79,8 @@ contract DecisionEngine01 {
     bool canceled;
     // Flag marking whether the proposal has been executed
     bool executed;
+    // id of the snapshot
+    uint256 snapshotId;
   }
 
   /// @notice Ballot receipt record for a voter
@@ -86,7 +90,7 @@ contract DecisionEngine01 {
     // Whether or not the voter supports the proposal
     bool support;
     // The number of votes the voter had, which were cast
-    uint96 votes;
+    uint256 votes;
   }
 
   /// @notice Possible states that a proposal may be in
@@ -100,6 +104,8 @@ contract DecisionEngine01 {
     Expired,
     Executed
   }
+
+  enum TokenType {Minime, ERC20Snapshot}
 
   /// @notice The official record of all proposals ever proposed
   mapping(uint256 => Proposal) public proposals;
@@ -130,7 +136,8 @@ contract DecisionEngine01 {
     bytes[] calldatas,
     uint256 startBlock,
     uint256 endBlock,
-    string description
+    string description,
+    uint256 snapshotId
   );
 
   /// @notice An event emitted when a vote has been cast on a proposal
@@ -156,10 +163,12 @@ contract DecisionEngine01 {
     uint256 proposalThreshold_,
     uint256 quorumVotes_,
     uint256 votingPeriod_,
-    uint256 proposalMaxOperations_
+    uint256 proposalMaxOperations_,
+    TokenType tokenType_
   ) public {
     safe = IGnosisSafe(safe_);
-    token = IMiniMetoken(token_);
+    tokenType = tokenType_;
+    token = token_;
     proposalThreshold = proposalThreshold_;
     quorumVotes = quorumVotes_;
     votingPeriod = votingPeriod_;
@@ -192,13 +201,22 @@ contract DecisionEngine01 {
     bytes[] memory calldatas,
     string memory description
   ) public returns (uint256) {
+    uint256 startBlock = block.number.add(votingDelay());
+    uint256 endBlock = startBlock.add(votingPeriod);
+    uint256 snapshotId;
+    if (tokenType == TokenType.Minime) {
+      snapshotId = block.number;
+    } else if (tokenType == TokenType.ERC20Snapshot) {
+      snapshotId = IERC20Snapshot(token).snapshot();
+    }
     require(
       votingPower(
-        token.balanceOfAt(msg.sender, sub256(block.number, 1)),
-        token.totalSupplyAt(sub256(block.number, 1))
+        IMiniMetoken(token).balanceOfAt(msg.sender, snapshotId),
+        IMiniMetoken(token).totalSupplyAt(snapshotId)
       ) > proposalThreshold,
       "GovernorAlpha::propose: proposer votes below proposal threshold"
     );
+
     require(
       targets.length == values.length && targets.length == calldatas.length,
       "GovernorAlpha::propose: proposal function information arity mismatch"
@@ -225,9 +243,6 @@ contract DecisionEngine01 {
       );
     }
 
-    uint256 startBlock = block.number.add(votingDelay());
-    uint256 endBlock = startBlock.add(votingPeriod);
-
     proposalCount++;
     Proposal memory newProposal =
       Proposal({
@@ -243,7 +258,8 @@ contract DecisionEngine01 {
         forVotes: 0,
         againstVotes: 0,
         canceled: false,
-        executed: false
+        executed: false,
+        snapshotId: snapshotId
       });
 
     proposals[newProposal.id] = newProposal;
@@ -258,7 +274,8 @@ contract DecisionEngine01 {
       calldatas,
       startBlock,
       endBlock,
-      description
+      description,
+      snapshotId
     );
     return newProposal.id;
   }
@@ -284,6 +301,7 @@ contract DecisionEngine01 {
       state(proposalId) == ProposalState.Succeeded,
       "GovernorAlpha::execute: proposal can only be approved if it is Succeeded"
     );
+    require(false, "This needs to be implemented");
     Proposal storage proposal = proposals[proposalId];
     bytes32 proposalHash = keccak256("multisend.guard.bytes32");
     safe.approveHash(proposalHash);
@@ -457,7 +475,7 @@ contract DecisionEngine01 {
     );
 
     //
-    uint96 votes = token.balanceOfAt(voter, proposal.startBlock);
+    uint256 votes = IMiniMetoken(token).balanceOfAt(voter, proposal.snapshotId);
 
     if (support) {
       proposal.forVotes = proposal.forVotes.add(votes);

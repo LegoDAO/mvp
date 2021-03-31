@@ -2,11 +2,11 @@
 An example Lego DAO: 
  - Gnosis Safe 
  - Decision engine: a fork of Compound Governor
- - token: Baylina's MiniMe token
+ - token: An OpenZeppelin ERC20 Snapshot tokens 
 
 Permissions:
  - The Decision Engine is a signer of of 1/2 multisig - the other owner is the deployer
- - The Token is owned ("controlled" in the minime terminology) by the Safe
+ - The Token is owned by the Safe
  - The contract deployer holds the complete supply of 1000 Minime tokens
 
 */
@@ -15,31 +15,56 @@ import { ethers } from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { safeAddOwner } from "../scripts/utils";
+import { console, Error } from "@ungap/global-this";
 
+const DaoConfig = {
+  token: {
+    name: "ERC20SnapshotExample",
+    type: "ERC20Snapshot",
+  },
+  decisionEngine: {
+    type: "DecisionEngine01",
+    proposingThreshold: 10, // in percentage
+    quorumVotes: 4, // in percentage
+    votingPeriod: 10, // in blocks
+    proposalMaxOperations: 10,
+  },
+};
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts } = hre;
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
-  const tokenDeployment = await deployments.get("MiniMeToken");
+  // we use the predefined
   const safeDeployment = await deployments.get("GnosisSafe");
-
   const safe = await ethers.getContractAt("GnosisSafe", safeDeployment.address);
+  const tokenDeployment = await deploy("ERC20SnapshotExample", {
+    from: deployer,
+  });
+
   const token = await ethers.getContractAt(
-    "MiniMeToken",
+    "ERC20SnapshotExample",
     tokenDeployment.address
   );
 
+  let tokenType;
+  if (DaoConfig.token.type === "Minime") {
+    tokenType = 0;
+  } else if (DaoConfig.token.type === "ERC20Snapshot") {
+    tokenType = 1;
+  } else {
+    throw Error(`Unknown token type: "${DaoConfig.token.type}"`);
+  }
   const deployment = await deploy("DecisionEngine01", {
     from: deployer,
     log: true,
     args: [
       safe.address, // Gnosis Safe address
       token.address,
-      10, // proposingThreshold
-      4, // quorumVotes: 0
-      10, // votingPeriod 10 blocks
-      10, // proposalMaxOperations: 10
-      0, // tokenType (minime)
+      DaoConfig.decisionEngine.proposingThreshold,
+      DaoConfig.decisionEngine.quorumVotes,
+      DaoConfig.decisionEngine.votingPeriod,
+      DaoConfig.decisionEngine.proposalMaxOperations,
+      tokenType,
     ],
   });
 
@@ -53,11 +78,11 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   );
 
   // generate some tokens before transfering ownership of the token
-  await token.generateTokens(deployer, ethers.utils.parseEther("1000"));
+  await token.mint(deployer, ethers.utils.parseEther("1000"));
 
   // make the safe the solo owner of the token
-  await token.changeController(safe.address);
+  await token.transferOwnership(safe.address);
 };
 export default func;
-func.tags = ["ExampleDAOWithMiniMeToken"];
-func.dependencies = ["MiniMeToken", "GnosisSafe"];
+func.tags = ["ExampleDAOWithERC20Snapshot"];
+func.dependencies = ["ERC20SnapshotExample", "GnosisSafe"];

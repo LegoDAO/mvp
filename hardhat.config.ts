@@ -57,7 +57,7 @@ const config: HardhatUserConfig = {
   watcher: {
     test: {
       tasks: ["test"],
-      files: ["./artifacts", "./contracts", "./deploy", "./scripts", "./test"],
+      files: ["./contracts", "./deploy", "./scripts", "./test"],
       verbose: true,
     },
   },

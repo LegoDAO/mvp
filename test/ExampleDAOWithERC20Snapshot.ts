@@ -1,12 +1,18 @@
 import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { Contract, Transaction } from "ethers";
-import { safeExecuteByOwner, encodeParameters } from "../scripts/utils";
+import { safeExecuteByOwner } from "../scripts/utils";
+import console from "console";
 
 const STATE_PENDING = 0;
 const STATE_ACTIVE = 1;
 
-describe("Example DAO with Minime Token", () => {
+function encodeParameters(types: string[], values: string[]) {
+  const abi = new ethers.utils.AbiCoder();
+  return abi.encode(types, values);
+}
+
+describe("Example DAO with ERC20Snapshot Token", () => {
   let decisionEngine: Contract;
   let safe: Contract;
   let token: Contract;
@@ -18,14 +24,14 @@ describe("Example DAO with Minime Token", () => {
   let ProposalToMint10TokensToAddress1: any;
 
   beforeEach(async () => {
-    fixture = await deployments.fixture(["ExampleDAOWithMiniMeToken"]);
+    fixture = await deployments.fixture(["ExampleDAOWithERC20Snapshot"]);
     decisionEngine = await ethers.getContractAt(
       "DecisionEngine01",
       fixture.DecisionEngine01.address
     );
     token = await ethers.getContractAt(
-      "MiniMeToken",
-      fixture.MiniMeToken.address
+      "ERC20SnapshotExample",
+      fixture.ERC20SnapshotExample.address
     );
     safe = await ethers.getContractAt("GnosisSafe", fixture.GnosisSafe.address);
     accounts = await getNamedAccounts();
@@ -41,18 +47,11 @@ describe("Example DAO with Minime Token", () => {
     //   to: safe.address,
     //   value: ethers.utils.parseEther("0.1"),
     // });
-    NOOP_PROPOSAL = {
-      targets: [accounts.address1],
-      values: ["0"],
-      signatures: ["getBalanceOf(address)"],
-      callDatas: [encodeParameters(["address"], [accounts.deployer])],
-      calldatas: ["0x"],
-    };
 
     ProposalToMint10TokensToAddress1 = {
       targets: [token.address],
       values: ["0"],
-      signatures: ["generateTokens(address,uint256)"],
+      signatures: ["mint(address,uint256)"],
       calldatas: [
         encodeParameters(["address", "uint"], [accounts.address1, 10]),
       ],
@@ -73,20 +72,11 @@ describe("Example DAO with Minime Token", () => {
     expect(await safe.getThreshold()).to.equal(1);
 
     // the token is owned by the safe
-    expect(await token.controller()).to.equal(safe.address);
+    expect(await token.owner()).to.equal(safe.address);
 
     // the quorum is 4%
     expect(await decisionEngine.quorumVotes()).to.equal(4);
   });
-
-  // it("Safe sanity", async () => {
-  //   // safe expects the caller to encode the ABI
-  //   const data = token.interface.encodeFunctionData("generateTokens", [
-  //     accounts.address1,
-  //     10,
-  //   ]);
-  //   await safeExecuteByOwner(safe, accounts.deployer, token.address, data);
-  // });
 
   it("proposalThreshold works more or less in a sane way", async () => {
     // the threshold for proposing is 10%
@@ -98,7 +88,7 @@ describe("Example DAO with Minime Token", () => {
       ethers.utils.parseEther("1000")
     );
     // send 10.000 tokens to address1
-    data = token.interface.encodeFunctionData("generateTokens", [
+    data = token.interface.encodeFunctionData("mint", [
       accounts.address1,
       ethers.utils.parseEther("10000"),
     ]);
@@ -106,16 +96,18 @@ describe("Example DAO with Minime Token", () => {
     expect(await token.balanceOf(accounts.address1)).to.equal(
       ethers.utils.parseEther("10000")
     );
-    // await token.generateTokens(
-    //   accounts.address1,
-    //   ethers.utils.parseEther("10000")
-    // );
-    const { targets, values, signatures, calldatas } = NOOP_PROPOSAL;
+
+    const {
+      targets,
+      values,
+      signatures,
+      calldatas,
+    } = ProposalToMint10TokensToAddress1;
     tx = decisionEngine.propose(targets, values, signatures, calldatas, "");
     await expect(tx).to.be.revertedWith(
       "proposer votes below proposal threshold"
     );
-    data = token.interface.encodeFunctionData("generateTokens", [
+    data = token.interface.encodeFunctionData("mint", [
       accounts.deployer,
       ethers.utils.parseEther("1000"),
     ]);
@@ -149,7 +141,8 @@ describe("Example DAO with Minime Token", () => {
       "hello world"
     );
     receipt = await tx.wait();
-    const event = receipt.events[0];
+    const event = receipt.events[1];
+    expect(event.event).to.equal("ProposalCreated");
     const proposalId = event.args.id;
     let onChainProposalState;
     let onChainProposal;
