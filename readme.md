@@ -77,16 +77,14 @@ This is a stripped-down version of GovernorAlpha -
 
 ## Next steps
 
-- Use Gnosis DAO Module
-- Iterate a few times on the governance contract
-- We should upgrade to new Compound Governance contract
-- Check licensing
-- create tooling to configure these contracts
-- create tooling to deploy these contracts
-- we should support both Compound Proposals as well as GnosisSafe proposals (this can be config)
-- we should support other ERC20 tokens (e.g. those that re not "minime", like `ERC20Snapshot` of OpenZeppelin. Perhaps also generic ERC20 token)
-- Integrate with some UI system (Gnosis Safe Module, boardroom.io, sybil) (which also implies creating a subgraph)
-- Continuous integration
+- [ ] Use Gnosis DAO Module
+- [ ] improve and clean up the governance contract
+- [ ] upgrade to new Compound Governance contract
+- [ ] Check licensing
+- [ ] create tooling to configure and deploy "Lego DAOs"
+- [x] we should support other ERC20 tokens (e.g. those that re not "minime", like `ERC20Snapshot` of OpenZeppelin. Perhaps also generic ERC20 token)
+- [ ] Integrate with some UI system (Gnosis Safe Module, boardroom.io, sybil) (which also implies creating a subgraph)
+- [ ] Continuous integration
 
 ## Contributions welcome
 
