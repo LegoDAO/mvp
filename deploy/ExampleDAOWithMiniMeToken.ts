@@ -15,6 +15,21 @@ import { ethers } from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { safeAddOwner } from "../scripts/utils";
+import { IDAOConfig } from "../scripts/types";
+
+const DaoConfig: IDAOConfig = {
+  token: {
+    name: "ERC20SnapshotExample",
+    tokenType: "ERC20Snapshot",
+  },
+  decisionEngine: {
+    type: "DecisionEngine01",
+    proposingThreshold: 10, // in percentage
+    quorumVotes: 4, // in percentage
+    votingPeriod: 10, // in blocks
+    proposalMaxOperations: 10,
+  },
+};
 
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts } = hre;
@@ -35,11 +50,11 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     args: [
       safe.address, // Gnosis Safe address
       token.address,
+      0, // tokenType (minime)
       10, // proposingThreshold
       4, // quorumVotes: 0
       10, // votingPeriod 10 blocks
       10, // proposalMaxOperations: 10
-      0, // tokenType (minime)
     ],
   });
 

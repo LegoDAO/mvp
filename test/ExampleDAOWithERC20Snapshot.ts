@@ -2,7 +2,6 @@ import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { Contract, Transaction } from "ethers";
 import { safeExecuteByOwner } from "../scripts/utils";
-import console from "console";
 
 const STATE_PENDING = 0;
 const STATE_ACTIVE = 1;

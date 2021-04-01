@@ -13,9 +13,8 @@ Permissions:
 
 import { ethers } from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { DeployFunction } from "hardhat-deploy/types";
+import { DeployFunction, Deployment } from "hardhat-deploy/types";
 import { safeAddOwner } from "../scripts/utils";
-import { console, Error } from "@ungap/global-this";
 
 const DaoConfig = {
   token: {
@@ -30,12 +29,13 @@ const DaoConfig = {
     proposalMaxOperations: 10,
   },
 };
+
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { deployments, getNamedAccounts } = hre;
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   // we use the predefined
-  const safeDeployment = await deployments.get("GnosisSafe");
+  const safeDeployment: Deployment = await deployments.get("GnosisSafe");
   const safe = await ethers.getContractAt("GnosisSafe", safeDeployment.address);
   const tokenDeployment = await deploy("ERC20SnapshotExample", {
     from: deployer,
@@ -60,11 +60,11 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     args: [
       safe.address, // Gnosis Safe address
       token.address,
+      tokenType,
       DaoConfig.decisionEngine.proposingThreshold,
       DaoConfig.decisionEngine.quorumVotes,
       DaoConfig.decisionEngine.votingPeriod,
       DaoConfig.decisionEngine.proposalMaxOperations,
-      tokenType,
     ],
   });
 

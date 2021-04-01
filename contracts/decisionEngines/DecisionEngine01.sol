@@ -11,6 +11,38 @@ import "hardhat/console.sol";
 /**
   An adaptation of the GovernorAlpha contract
   Forked from https://github.com/compound-finance/compound-protocol/blob/compound/2.8/contracts/Governance/GovernorAlpha.sol
+  but with many changes
+
+
+  - basically, we only kept the "propose - vote -execute" flow of thione decision mechanism
+  - add configuration options to the constructor:
+    - `safe` -> the address of a Gnosis safe that holds the assets and will execut the proposals
+    - `token` -> the address of a token that determines the Voting Power
+    - `tokenType` -> type of the token contract, either Minime or ERC20Snapshot
+     -`quorumVotes`
+    - `proposalThreshold`
+    - `votingDelay`
+    - `votingPeriod`
+  - changed the execute semantics to call the Gnosis safe
+  - added an `approveHash` function that call `approveHash` on the safe
+  - upgrade to solidity 0.7.3, which required some changes in syntax
+  - call `token.balanceOfAt()` instead of `token.getPriorVotes()`
+  - base all voting logic on the basis of the voting power distribution at proposal creation
+   (GovernorAlpha checks the voting proposalThreshold at the block bf proposal creation, and counts the votes
+   from the start time of the proposal)
+  - add configuration options to the constructor:
+    - `safe` -> the address of a Gnosis safe that holds the assets and will execut the proposals
+    - `token` -> the address of a token that determines the Voting Power
+    - `tokenType` -> type of the token contract, either Minime or ERC20Snapshot
+     -`quorumVotes`
+    - `proposalThreshold`
+    - `votingDelay`
+    - `votingPeriod`
+  - change the semantics of `quorumvotes` and `proposalThreshold` to percentages, not absolute figures
+  - rename `timelock` to `safe`
+  - removed the logic related to timelocks, because in Lego this kind of safety mechanism has a better place on the Gnosis Safe
+  - removed the logic related to the guardian, becuase in the Lego Architecture this kind of permissioning is easier handled on the Gnosis Safe - rename Comp to "token"
+  - added a new parameter to the constructor called tokenType - it can either be ERC20Snapshot or Minime
  */
 
 contract DecisionEngine01 {
@@ -160,11 +192,11 @@ contract DecisionEngine01 {
   constructor(
     address safe_,
     address token_,
+    TokenType tokenType_,
     uint256 proposalThreshold_,
     uint256 quorumVotes_,
     uint256 votingPeriod_,
-    uint256 proposalMaxOperations_,
-    TokenType tokenType_
+    uint256 proposalMaxOperations_
   ) public {
     safe = IGnosisSafe(safe_);
     tokenType = tokenType_;
