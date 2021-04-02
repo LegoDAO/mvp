@@ -37,7 +37,7 @@ to the
 | 3. Queue   | `queue(..)`    | `approveHash(..)` |
 | 4. Execute | `execute(..)`  | `execute( )`      |
 
-### If the decision Engine is the multsig owner
+### If the decision Engine is a multsig owner
 
 Gnosis Safe support different styles of transaction approval, both on-chain and off-chain.
 
@@ -53,7 +53,9 @@ Gnosis Safe support different styles of transaction approval, both on-chain and 
 
 2. After the proposal is approved by the enough other multisig signers, the transaction can be executed. With the approval of enough signers, anyone can call the `execute` method on the Safe. Transaction approvals can be either signed on-chain (using approveHash, as in the step abouve), or be signed off-chain and submitted as an argument to the `execute` method.
 
-> Question: what type of execution should be supported by the Decision engine here? What is a natural UX flow?
+> Special case is when the decision engine is the _only_ owner of the safe. In that case, the `queue/approveHash` step can be skipped and the transaction can be executed directly.
+
+> **Question**: what type of execution should be supported by the Decision engine here? What is a natural UX flow for adding off-chain transactions?
 
 ## If the decision engine is a module
 
