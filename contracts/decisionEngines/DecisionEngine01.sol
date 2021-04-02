@@ -328,21 +328,42 @@ contract DecisionEngine01 {
   //     safe.queueTransaction(target, value, signature, data, eta);
   // }
 
-  function approveHash(uint256 proposalId) public payable {
+  function approveHash(uint256 proposalId) public {
     require(
       state(proposalId) == ProposalState.Succeeded,
       "GovernorAlpha::execute: proposal can only be approved if it is Succeeded"
     );
-    require(false, "This needs to be implemented");
     Proposal storage proposal = proposals[proposalId];
-    bytes32 proposalHash = keccak256("multisend.guard.bytes32");
-    safe.approveHash(proposalHash);
+    uint256 nonce = safe.nonce();
+    for (uint256 i = 0; i < proposal.targets.length; i++) {
+      bytes memory payload =
+        abi.encodePacked(
+          bytes4(keccak256(bytes(proposal.signatures[i]))),
+          proposal.calldatas[i]
+        );
+      bytes32 txHash =
+        safe.getTransactionHash(
+          proposal.targets[i], //     address to,
+          proposal.values[i], //     uint256 value,
+          payload, //     bytes calldata data,
+          IGnosisSafe.Operation.Call, //     Enum.Operation operation,
+          0, //     uint256 safeTxGas,
+          0, //     uint256 baseGas,
+          0, //     uint256 gasPrice,
+          address(0), //     address gasToken,
+          address(0), //     address payable refundReceiver,
+          nonce
+        );
+      // TODO: feels like the nonce logic needs some love
+      nonce++;
+      safe.approveHash(txHash);
+    }
   }
 
   /** 
 
   */
-  function execute(uint256 proposalId) public payable {
+  function execute(uint256 proposalId) public {
     require(
       state(proposalId) == ProposalState.Succeeded,
       "GovernorAlpha::execute: proposal can only be executed if it is Succeeded"

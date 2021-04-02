@@ -41,7 +41,7 @@ export const safeSwapOwner = async (
 
 export const safeAddOwner = async (
   safe: Contract,
-  prevOwner: Address,
+  executingOwner: Address,
   newOwner: Address,
   threshold: number = 1
 ) => {
@@ -51,7 +51,7 @@ export const safeAddOwner = async (
     "addOwnerWithThreshold",
     [newOwner, threshold]
   );
-  return safeExecuteByOwner(safe, prevOwner, safe.address, data);
+  return safeExecuteByOwner(safe, executingOwner, safe.address, data);
 };
 
 export const safeExecuteByOwner = async (
