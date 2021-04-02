@@ -49,7 +49,7 @@ Gnosis Safe support different styles of transaction approval, both on-chain and 
 
    b. The decision engine calls `approveHash(transactionHash)` f
 
-   [DecisionEngine01.sol](../contracts/DecisionEngine01.sol) has an implementation (still needs work!)
+   [DecisionEngine01.sol](../contracts/decisionEngines/DecisionEngine01.sol) has an implementation (still needs work!)
 
 2. After the proposal is approved by the enough other multisig signers, the transaction can be executed. With the approval of enough signers, anyone can call the `execute` method on the Safe. Transaction approvals can be either signed on-chain (using approveHash, as in the step abouve), or be signed off-chain and submitted as an argument to the `execute` method.
 
