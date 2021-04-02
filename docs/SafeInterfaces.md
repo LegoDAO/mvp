@@ -1,4 +1,4 @@
-# Interfaces beteween the DecisionEngine and the Gnosis Safe
+# Interface between the DecisionEngine and the Gnosis Safe
 
 <p align="center">
 <img src="https://user-images.githubusercontent.com/1306173/112619224-596b3900-8e27-11eb-95dd-04aa60c12b99.png" height="400" align="center">
