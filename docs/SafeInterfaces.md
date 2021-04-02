@@ -4,6 +4,10 @@
 <img src="https://user-images.githubusercontent.com/1306173/112619224-596b3900-8e27-11eb-95dd-04aa60c12b99.png" height="400" align="center">
 </p>
 
+We are talking about the arrow between "compound Fork" and "Gnosis Safe" here.
+
+The question is: after a proposal is approved in the Decision Engine, how does it get executed in the Safe?
+
 ## Two approaches
 
 There are two different approaches:
