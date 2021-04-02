@@ -15,17 +15,19 @@ import { ethers } from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction, Deployment } from "hardhat-deploy/types";
 import { safeAddOwner } from "../scripts/utils";
+import { IDAOConfig } from "../scripts/types";
 
-const DaoConfig = {
+const DaoConfig: IDAOConfig = {
   token: {
     name: "ERC20SnapshotExample",
-    type: "ERC20Snapshot",
+    tokenType: "ERC20Snapshot",
   },
   decisionEngine: {
     type: "DecisionEngine01",
     proposingThreshold: 10, // in percentage
     quorumVotes: 4, // in percentage
     votingPeriod: 10, // in blocks
+    votingDelay: 1,
     proposalMaxOperations: 10,
   },
 };
@@ -47,12 +49,12 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   );
 
   let tokenType;
-  if (DaoConfig.token.type === "Minime") {
+  if (DaoConfig.token.tokenType === "Minime") {
     tokenType = 0;
-  } else if (DaoConfig.token.type === "ERC20Snapshot") {
+  } else if (DaoConfig.token.tokenType === "ERC20Snapshot") {
     tokenType = 1;
   } else {
-    throw Error(`Unknown token type: "${DaoConfig.token.type}"`);
+    throw Error(`Unknown token type: "${DaoConfig.token.tokenType}"`);
   }
   const deployment = await deploy("DecisionEngine01", {
     from: deployer,
@@ -64,6 +66,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
       DaoConfig.decisionEngine.proposingThreshold,
       DaoConfig.decisionEngine.quorumVotes,
       DaoConfig.decisionEngine.votingPeriod,
+      DaoConfig.decisionEngine.votingDelay,
       DaoConfig.decisionEngine.proposalMaxOperations,
     ],
   });

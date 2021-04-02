@@ -27,6 +27,7 @@ const DaoConfig: IDAOConfig = {
     proposingThreshold: 10, // in percentage
     quorumVotes: 4, // in percentage
     votingPeriod: 10, // in blocks
+    votingDelay: 1,
     proposalMaxOperations: 10,
   },
 };
@@ -53,7 +54,9 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
       0, // tokenType (minime)
       10, // proposingThreshold
       4, // quorumVotes: 0
-      10, // votingPeriod 10 blocks
+      DaoConfig.decisionEngine.quorumVotes,
+      DaoConfig.decisionEngine.votingPeriod,
+      DaoConfig.decisionEngine.votingDelay,
       10, // proposalMaxOperations: 10
     ],
   });

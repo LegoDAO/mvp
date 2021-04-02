@@ -2,11 +2,10 @@ pragma solidity ^0.7.3;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../interfaces/IMiniMetoken.sol";
 import "../interfaces/IGnosisSafe.sol";
+import "../interfaces/IMiniMetoken.sol";
 import "../interfaces/IERC20Snapshot.sol";
-
-import "hardhat/console.sol";
+import "../interfaces/ILegoDecisionEngine.sol";
 
 /**
   An adaptation of the GovernorAlpha contract
@@ -45,7 +44,7 @@ import "hardhat/console.sol";
   - added a new parameter to the constructor called tokenType - it can either be ERC20Snapshot or Minime
  */
 
-contract DecisionEngine01 {
+contract DecisionEngine01 is ILegoDecisionEngine {
   using SafeMath for uint256;
   /// @notice The name of this contract
   string public constant NAME = "GovernorAlpha.v2.Simplified.And.Parametrized";
@@ -53,91 +52,32 @@ contract DecisionEngine01 {
   /**
    * @dev The percentage of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
    */
-  uint256 public quorumVotes;
+  uint256 public override quorumVotes;
 
   /** @dev The percentage of votes required in order for a voter to become a proposer
    *
    */
-  uint256 public proposalThreshold;
+  uint256 public override proposalThreshold;
 
   // @notice The maximum number of actions that can be included in a proposal
-  uint256 public proposalMaxOperations;
+  uint256 public override proposalMaxOperations;
 
   /// @dev The delay before voting on a proposal may take place, once proposed
-  uint256 private _votingDelay = 1; // 1 block
-
-  function votingDelay() public view returns (uint256) {
-    return _votingDelay;
-  } // 1 block
+  uint256 public override votingDelay; // 1 block
 
   /// @dev The duration of voting on a proposal, in blocks
-  uint256 public votingPeriod;
+  uint256 public override votingPeriod;
 
   /// @notice The address of the Gnosis Safe
-  IGnosisSafe public safe;
+  IGnosisSafe public override safe;
 
   /// @notice The address of the governance token
-  address public token;
-  TokenType public tokenType;
+  address public override token;
+
+  TokenType public override tokenType;
 
   /// @notice The total number of proposals
-  uint256 public proposalCount;
-
-  // We change the Proposal struct so we can vote on Gnosis Safe transactions
-  struct Proposal {
-    // Unique id for looking up a proposal
-    uint256 id;
-    // Creator of the proposal
-    address proposer;
-    // The timestamp that the proposal will be available for execution, set once the vote succeeds
-    uint256 eta;
-    // the ordered list of target addresses for calls to be made
-    address[] targets;
-    // The ordered list of values (i.e. msg.value) to be passed to the calls to be made
-    uint256[] values;
-    // The ordered list of function signatures to be called
-    string[] signatures;
-    // notice The ordered list of calldata to be passed to each call
-    bytes[] calldatas;
-    // The block at which voting begins: holders must delegate their votes prior to this block
-    uint256 startBlock;
-    // The block at which voting ends: votes must be cast prior to this block
-    uint256 endBlock;
-    // number of votes in favor of this proposal
-    uint256 forVotes;
-    // Current number of votes in opposition to this proposal
-    uint256 againstVotes;
-    // Flag marking whether the proposal has been canceled
-    bool canceled;
-    // Flag marking whether the proposal has been executed
-    bool executed;
-    // id of the snapshot
-    uint256 snapshotId;
-  }
-
-  /// @notice Ballot receipt record for a voter
-  struct Receipt {
-    // @notice Whether or not a vote has been cast
-    bool hasVoted;
-    // Whether or not the voter supports the proposal
-    bool support;
-    // The number of votes the voter had, which were cast
-    uint256 votes;
-  }
-
-  /// @notice Possible states that a proposal may be in
-  enum ProposalState {
-    Pending,
-    Active,
-    Canceled,
-    Defeated,
-    Succeeded,
-    Queued,
-    Expired,
-    Executed
-  }
-
-  enum TokenType {Minime, ERC20Snapshot}
+  uint256 public override proposalCount;
 
   /// @notice The official record of all proposals ever proposed
   mapping(uint256 => Proposal) public proposals;
@@ -196,14 +136,16 @@ contract DecisionEngine01 {
     uint256 proposalThreshold_,
     uint256 quorumVotes_,
     uint256 votingPeriod_,
+    uint256 votingDelay_,
     uint256 proposalMaxOperations_
-  ) public {
+  ) {
     safe = IGnosisSafe(safe_);
     tokenType = tokenType_;
     token = token_;
     proposalThreshold = proposalThreshold_;
     quorumVotes = quorumVotes_;
     votingPeriod = votingPeriod_;
+    votingDelay = votingDelay_;
     proposalMaxOperations = proposalMaxOperations_;
   }
 
@@ -215,7 +157,7 @@ contract DecisionEngine01 {
    **/
   function votingPower(uint256 balance, uint256 totalBalance)
     internal
-    view
+    pure
     returns (uint256)
   {
     if (totalBalance == 0) {
@@ -232,8 +174,8 @@ contract DecisionEngine01 {
     string[] memory signatures,
     bytes[] memory calldatas,
     string memory description
-  ) public returns (uint256) {
-    uint256 startBlock = block.number.add(votingDelay());
+  ) public override returns (uint256) {
+    uint256 startBlock = block.number.add(votingDelay);
     uint256 endBlock = startBlock.add(votingPeriod);
     uint256 snapshotId;
     if (tokenType == TokenType.Minime) {
@@ -328,13 +270,14 @@ contract DecisionEngine01 {
   //     safe.queueTransaction(target, value, signature, data, eta);
   // }
 
-  function approveHash(uint256 proposalId) public {
+  function queue(uint256 proposalId) public override {
     require(
       state(proposalId) == ProposalState.Succeeded,
       "GovernorAlpha::execute: proposal can only be approved if it is Succeeded"
     );
     Proposal storage proposal = proposals[proposalId];
     uint256 nonce = safe.nonce();
+    // TODO: THIS IS THE WRONG APPROACH; we should approve the hash of a MultisSend transction here
     for (uint256 i = 0; i < proposal.targets.length; i++) {
       bytes memory payload =
         abi.encodePacked(
@@ -363,7 +306,7 @@ contract DecisionEngine01 {
   /** 
 
   */
-  function execute(uint256 proposalId) public {
+  function execute(uint256 proposalId) public override {
     require(
       state(proposalId) == ProposalState.Succeeded,
       "GovernorAlpha::execute: proposal can only be executed if it is Succeeded"
@@ -375,6 +318,8 @@ contract DecisionEngine01 {
     // not need to actually sign the transaction, but just send over the address
     bytes memory sig =
       abi.encodePacked(bytes12(0), address(this), bytes32(0), uint8(1));
+
+    // TODO: THIS IS THE WRONG APPROACH; we should send a single transaction using MultiSend
     for (uint256 i = 0; i < proposal.targets.length; i++) {
       bytes memory payload =
         abi.encodePacked(
@@ -479,7 +424,7 @@ contract DecisionEngine01 {
     }
   }
 
-  function castVote(uint256 proposalId, bool support) public {
+  function castVote(uint256 proposalId, bool support) public override {
     return _castVote(msg.sender, proposalId, support);
   }
 

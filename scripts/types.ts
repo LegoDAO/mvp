@@ -2,7 +2,14 @@ import { Contract } from "ethers";
 
 export type IDAOConfig = {
   token: IDeployedToken | ITokenConfig;
-  decisionEngine: {};
+  decisionEngine: {
+    type: string;
+    proposingThreshold: number;
+    quorumVotes: number; // in percentage
+    votingPeriod: number; // in blocks
+    votingDelay: number;
+    proposalMaxOperations: number;
+  };
 };
 
 type ITokenType = "Minime" | "ERC20Snapshot";
