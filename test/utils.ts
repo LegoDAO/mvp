@@ -35,3 +35,6 @@ export async function createAProposal(
   const proposalId = event.args.id;
   return { tx, proposalId };
 }
+
+export const NAY = 0;
+export const YAY = 1;

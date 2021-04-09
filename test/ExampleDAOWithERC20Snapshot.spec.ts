@@ -2,6 +2,7 @@ import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { Contract, Transaction } from "ethers";
 import { safeExecuteByOwner } from "../scripts/utils";
+import { YAY } from "./utils";
 
 const STATE_PENDING = 0;
 const STATE_ACTIVE = 1;
@@ -77,7 +78,7 @@ describe("Example DAO with ERC20Snapshot Token", () => {
     expect(await decisionEngine.quorumVotes()).to.equal(4);
   });
 
-  it("proposalThreshold works more or less in a sane way", async () => {
+  it("proposalThreshold seems sane", async () => {
     // the threshold for proposing is 10%
     let tx: Transaction;
     let data: string;
@@ -156,8 +157,7 @@ describe("Example DAO with ERC20Snapshot Token", () => {
     ethers.provider.send("evm_mine", []);
 
     // vote for the proposal
-    const VOTE_FOR = true;
-    await decisionEngine.castVote(proposalId, VOTE_FOR);
+    await decisionEngine.castVote(proposalId, YAY);
     onChainProposalState = await decisionEngine.state(proposalId);
     expect(onChainProposalState).to.equal(STATE_ACTIVE);
     onChainProposal = await decisionEngine.proposals(proposalId);

@@ -79,12 +79,16 @@ This is a stripped-down version of GovernorAlpha -
 
 - [ ] Use Gnosis DAO Module
 - [ ] improve and clean up the governance contract
-- [ ] upgrade to new Compound Governance contract
+- [x] upgrade to new Compound GovernorBravo contract
 - [ ] Check licensing
 - [ ] create tooling to configure and deploy "Lego DAOs"
 - [x] we should support other ERC20 tokens (e.g. those that re not "minime", like `ERC20Snapshot` of OpenZeppelin. Perhaps also generic ERC20 token)
 - [ ] Integrate with some UI system (Gnosis Safe Module, boardroom.io, sybil) (which also implies creating a subgraph)
 - [ ] Continuous integration
+- [ ] migrate tests from compound protocol to this repository
+- [ ] calculate votingPower with much more precision
+- [ ] give the quorumVotes and proposalThreshold much more precision
+- [ ] (perhaps) make DecisionEngine01 Ownable and remove the admin stuff
 
 ## Contributions welcome
 

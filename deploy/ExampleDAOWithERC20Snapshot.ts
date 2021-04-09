@@ -24,7 +24,7 @@ const DaoConfig: IDAOConfig = {
   },
   decisionEngine: {
     type: "DecisionEngine01",
-    proposingThreshold: 10, // in percentage
+    proposalThreshold: 10, // in percentage
     quorumVotes: 4, // in percentage
     votingPeriod: 10, // in blocks
     votingDelay: 1,
@@ -59,17 +59,20 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deployment = await deploy("DecisionEngine01", {
     from: deployer,
     log: true,
-    args: [
-      safe.address, // Gnosis Safe address
-      token.address,
-      tokenType,
-      DaoConfig.decisionEngine.proposingThreshold,
-      DaoConfig.decisionEngine.quorumVotes,
-      DaoConfig.decisionEngine.votingPeriod,
-      DaoConfig.decisionEngine.votingDelay,
-      DaoConfig.decisionEngine.proposalMaxOperations,
-    ],
+    proxy: true
   });
+
+  const decisionEngine = await ethers.getContractAt("DecisionEngine01", deployment.address)
+  await decisionEngine.initialize(
+    deployer,
+    safe.address, // Gnosis Safe address
+    token.address,
+    tokenType,
+    DaoConfig.decisionEngine.votingPeriod,
+    DaoConfig.decisionEngine.votingDelay,
+    DaoConfig.decisionEngine.proposalThreshold,
+    DaoConfig.decisionEngine.quorumVotes,
+  )
 
   // add the decision engine as a signer to the contract
 

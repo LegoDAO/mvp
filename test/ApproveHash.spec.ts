@@ -1,12 +1,8 @@
-import { ethers, deployments, getNamedAccounts, getChainId } from "hardhat";
+import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
-import { Contract, Transaction } from "ethers";
-import {
-  safeAddOwner,
-  safeExecuteByOwner,
-  encodeParameters,
-} from "../scripts/utils";
-import { createAProposal } from "./utils";
+import { Contract } from "ethers";
+import { safeAddOwner, } from "../scripts/utils";
+import { createAProposal, YAY } from "./utils";
 
 const STATE_PENDING = 0;
 const STATE_ACTIVE = 1;
@@ -19,8 +15,6 @@ describe("Example DAO with Minime Token", () => {
   let signers: any[];
   let signer: any;
   let fixture: any;
-  let NOOP_PROPOSAL: any;
-  let ProposalToMint10TokensToAddress1: any;
 
   beforeEach(async () => {
     fixture = await deployments.fixture(["ExampleDAOWithMiniMeToken"]);
@@ -60,8 +54,7 @@ describe("Example DAO with Minime Token", () => {
     ethers.provider.send("evm_mine", []);
 
     // vote for the proposal
-    const VOTE_FOR = true;
-    await decisionEngine.castVote(proposalId, VOTE_FOR);
+    await decisionEngine.castVote(proposalId, YAY);
     onChainProposalState = await decisionEngine.state(proposalId);
     expect(onChainProposalState).to.equal(STATE_ACTIVE);
     onChainProposal = await decisionEngine.proposals(proposalId);

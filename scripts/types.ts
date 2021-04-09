@@ -4,7 +4,7 @@ export type IDAOConfig = {
   token: IDeployedToken | ITokenConfig;
   decisionEngine: {
     type: string;
-    proposingThreshold: number;
+    proposalThreshold: number;
     quorumVotes: number; // in percentage
     votingPeriod: number; // in blocks
     votingDelay: number;

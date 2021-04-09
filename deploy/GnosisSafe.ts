@@ -20,13 +20,12 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     owners: [deployer],
     threshold: 1,
   };
-  const tx1 = await deploy("GnosisSafe", {
+  const deployment = await deploy("GnosisSafe", {
     from: deployer,
     log: true,
     proxy: true,
   });
-  const safe = await ethers.getContractAt("GnosisSafe", tx1.address);
-
+  const safe = await ethers.getContractAt("GnosisSafe", deployment.address);
   const { owners, threshold } = gnosisSafeSettings;
 
   /// @dev Setup function sets initial storage of contract.

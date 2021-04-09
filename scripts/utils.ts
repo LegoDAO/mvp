@@ -81,7 +81,7 @@ export const safeExecuteByOwner = async (
   );
   const receipt = await tx.wait();
   if (receipt.events[0].event === "ExecutionFailure") {
-    throw Error("ExecutionFailure when trying to execute ... ");
+    throw Error("ExecutionFailure when trying to safeExecuteByOwner");
   }
 };
 

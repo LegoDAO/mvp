@@ -15,7 +15,6 @@ describe("Example DAO with Minime Token", () => {
   let signer: any;
   let fixture: any;
   let NOOP_PROPOSAL: any;
-  let ProposalToMint10TokensToAddress1: any;
 
   beforeEach(async () => {
     fixture = await deployments.fixture(["ExampleDAOWithMiniMeToken"]);
@@ -97,10 +96,6 @@ describe("Example DAO with Minime Token", () => {
     expect(await token.balanceOf(accounts.address1)).to.equal(
       ethers.utils.parseEther("10000")
     );
-    // await token.generateTokens(
-    //   accounts.address1,
-    //   ethers.utils.parseEther("10000")
-    // );
     const { targets, values, signatures, calldatas } = NOOP_PROPOSAL;
     tx = decisionEngine.propose(targets, values, signatures, calldatas, "");
     await expect(tx).to.be.revertedWith(
@@ -139,7 +134,7 @@ describe("Example DAO with Minime Token", () => {
     ethers.provider.send("evm_mine", []);
 
     // vote for the proposal
-    const VOTE_FOR = true;
+    const VOTE_FOR = 1;
     await decisionEngine.castVote(proposalId, VOTE_FOR);
 
     onChainProposalState = await decisionEngine.state(proposalId);

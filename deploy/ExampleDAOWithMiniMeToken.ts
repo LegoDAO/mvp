@@ -24,7 +24,7 @@ const DaoConfig: IDAOConfig = {
   },
   decisionEngine: {
     type: "DecisionEngine01",
-    proposingThreshold: 10, // in percentage
+    proposalThreshold: 10, // in percentage
     quorumVotes: 4, // in percentage
     votingPeriod: 10, // in blocks
     votingDelay: 1,
@@ -45,24 +45,27 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     tokenDeployment.address
   );
 
+  const tokenType = 0;
   const deployment = await deploy("DecisionEngine01", {
     from: deployer,
     log: true,
-    args: [
-      safe.address, // Gnosis Safe address
-      token.address,
-      0, // tokenType (minime)
-      10, // proposingThreshold
-      4, // quorumVotes: 0
-      DaoConfig.decisionEngine.quorumVotes,
-      DaoConfig.decisionEngine.votingPeriod,
-      DaoConfig.decisionEngine.votingDelay,
-      10, // proposalMaxOperations: 10
-    ],
+    proxy: true,
+    args: [deployer]
   });
 
-  // add the decision engine as a signer to the contract
+  const decisionEngine = await ethers.getContractAt("DecisionEngine01", deployment.address)
+  await decisionEngine.initialize(
+    deployer, // the owneryy
+    safe.address, // Gnosis Safe address
+    token.address,
+    tokenType,
+    DaoConfig.decisionEngine.votingPeriod,
+    DaoConfig.decisionEngine.votingDelay,
+    DaoConfig.decisionEngine.proposalThreshold,
+    DaoConfig.decisionEngine.quorumVotes,
+  )
 
+  // add the decision engine as a signer to the contract
   await safeAddOwner(
     safe, // safe
     deployer, // prevOwner
