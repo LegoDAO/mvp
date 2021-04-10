@@ -15,6 +15,7 @@ This repository is an MVP and a work in progress.
 
 At the moment we have:
 
+- A Proof of Concept implementation of a Lego DAO, which contains of a generic ERC20Snapshot token, a fork of Compounds GovernorBravo contract, and a Gnosis Safe instance, that interact in a coherent way.
 - A fork of [Compound's GovernorBravo contracts](https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/)  contract that 
   1. is adapted to queue transactions into a Gnosis Safe for execution (rather than the native Timelock functionality)
   2. can read Voting power from any ERC20 token that either implements the  [MiniMe](https://github.com/Giveth/minime/blob/master/contracts/MiniMeToken.sol) interface or OpenZeppelin's [ERC20Snapshot](https://docs.openzeppelin.com/contracts/3.x/api/token/erc20#ERC20Snapshot)
@@ -26,7 +27,7 @@ At the moment we have:
 ## Next steps
 
 - [ ] improve and clean up the governance contract, test it, etc.
-  - [ ] calculate votingPower with much more precision
+  - [ ] calculate votingPower with much more precision
   - [ ] give the quorumVotes and proposalThreshold much more precision 
   - [ ] migrate tests from compound protocol to this repository
 - [x] upgrade from GovernorAlpha to Compound GovernorBravo interface
@@ -69,7 +70,6 @@ yarn test
 
 This is a stripped-down version of [GovernorBravo contracts](https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/)
 
-- basically, we only kept the "propose - vote -execute" flow
 - add configuration options to the constructor:
   - `safe` -> the address of a Gnosis safe that holds the assets and will execut the proposals
   - `token` -> the address of a token that determines the Voting Power
