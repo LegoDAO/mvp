@@ -8,38 +8,32 @@ import "../interfaces/IERC20Snapshot.sol";
 import "../interfaces/IGovernorBravoDecisionEngine.sol";
 
 /**
-  An adaptation of the GovernorAlpha contract
-  Forked from https://github.com/compound-finance/compound-protocol/blob/compound/2.8/contracts/Governance/GovernorAlpha.sol
-  but with many changes
+This is a stripped-down version of [GovernorBravo contracts](https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/)
 
+- basically, we only kept the "propose - vote -execute" flow
+- add configuration options to the constructor:
+  - `safe` -> the address of a Gnosis safe that holds the assets and will execut the proposals
+  - `token` -> the address of a token that determines the Voting Power
+  - `tokenType` -> the kind of token (either Minime or ERC20snapshot)
+  - `quorumVotes`
+  - `proposalThreshold`
+  - `votingDelay`
+  - `votingPeriod`
+- rename `timelock` to `safe`, and `comp` to `token`
+- upgrade to solidity 0.7.3, which required some changes in syntax
 
-  - basically, we only kept the "propose - vote -execute" flow of thione decision mechanism
-  - add configuration options to the constructor:
-    - `safe` -> the address of a Gnosis safe that holds the assets and will execut the proposals
-    - `token` -> the address of a token that determines the Voting Power
-    - `tokenType` -> type of the token contract, either Minime or ERC20Snapshot
-     -`quorumVotes`
-    - `proposalThreshold`
-    - `votingDelay`
-    - `votingPeriod`
-  - changed the execute semantics to call the Gnosis safe
-  - added an `approveHash` function that call `approveHash` on the safe
-  - upgrade to solidity 0.7.3, which required some changes in syntax
-  - call `token.balanceOfAt()` instead of `token.getPriorVotes()`
-  - base all voting logic on the basis of the voting power distribution at proposal creation
-   (GovernorAlpha checks the voting proposalThreshold at the block bf proposal creation, and counts the votes
-   from the start time of the proposal)
-  - add configuration options to the constructor:
-    - `safe` -> the address of a Gnosis safe that holds the assets and will execut the proposals
-    - `token` -> the address of a token that determines the Voting Power
-    - `tokenType` -> type of the token contract, either Minime or ERC20Snapshot
-     -`quorumVotes`
-  - change the semantics of `quorumvotes` and `proposalThreshold` to percentages, not absolute figures
-  - rename `timelock` to `safe`
-  - removed the logic related to timelocks, because in Lego this kind of safety mechanism has a better place on the Gnosis Safe
-  - removed the logic related to the guardian, becuase in the Lego Architecture this kind of permissioning is easier handled on the Gnosis Safe - rename Comp to "token"
-  - added a new parameter to the constructor called tokenType - it can either be ERC20Snapshot or Minime
-  - removeed the delegator/admin pattern, use OpenZeppeling proxy pattern instead
+- call `token.balanceOfAt()` instead of `token.getPriorVotes()`
+- base all voting logic on the basis of the voting power distribution at proposal creation
+  (GovernorAlpha checks the voting proposalThreshold at the block bf proposal creation, and counts the votes
+  from the start time of the proposal)
+- change the semantics of `quorumvotes` and `proposalThreshold` to percentages, not absolute figures
+
+- change the semantics of `queue` so that is queues the transaction for execution in the Gnosis safe (by alling `approveHash`)
+- change the semantics of `execute` so the proposal will be executed in the Gnosis Safe
+-
+- (todo: removed the logic related to timelocks, because in Lego this kind of safety mechanism has a better place on the Gnosis Safe )
+- (todo: removed the logic related to the guardian, becuase in the Lego Architecture this kind of permissioning is easier handled on the Gnosis Safe)
+- (todo: removed the delegator pattern, and use openzeppelin style proxies instead)d
  */
 
 contract DecisionEngine01 is IGovernorBravoDecisionEngine {
