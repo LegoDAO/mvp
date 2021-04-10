@@ -2,7 +2,7 @@
 
 <b>work in progress, all contributions welcome!</b>
 
-[Lego DAO](https://www.notion.so/LEGO-DAO-43b1905a888b47b987456b6df568d5cc) proposes a simple reusable pattern for creating and managing DAOs.
+[Lego DAO](https://www.notion.so/LEGO-DAO-43b1905a888b47b987456b6df568d5cc) proposes a simple reusable pattern for creating and managing DAOs - you can find more information on our [pages on notion](https://www.notion.so/LEGO-DAO-43b1905a888b47b987456b6df568d5cc)
 
 <p align="center">
 <img src="https://user-images.githubusercontent.com/1306173/114262574-083f7580-99e1-11eb-91e9-621ce0dfbf77.png" height="400" align="center">
