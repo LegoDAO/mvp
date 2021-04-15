@@ -1,18 +1,22 @@
 import { ethers, deployments, getNamedAccounts, getChainId } from "hardhat";
 import { expect } from "chai";
-import { Contract, Transaction } from "ethers";
+import { Contract, Transaction, Signer } from "ethers";
 import { safeExecuteByOwner, encodeParameters } from "../scripts/utils";
 import { createAProposal } from "./utils";
+
 const STATE_PENDING = 0;
 const STATE_ACTIVE = 1;
+
+const parseEther = ethers.utils.parseEther;
 
 describe("Example DAO with Minime Token", () => {
   let decisionEngine: Contract;
   let safe: Contract;
   let token: Contract;
   let accounts: any;
-  let signers: any[];
-  let signer: any;
+  let signers: Signer[];
+  let signer: Signer;
+  let signer1: Signer;
   let fixture: any;
   let NOOP_PROPOSAL: any;
 
@@ -30,6 +34,7 @@ describe("Example DAO with Minime Token", () => {
     accounts = await getNamedAccounts();
     signers = await ethers.getSigners();
     signer = signers[0];
+    signer1 = signers[1];
 
     // for the purposes of this test, make the decision engine the sole owner of the safe
     // safeSwapOwner(safe, accounts.deployer, decisionEngine.address);
@@ -66,7 +71,7 @@ describe("Example DAO with Minime Token", () => {
     expect(await token.controller()).to.equal(safe.address);
 
     // the quorum is 4%
-    expect(await decisionEngine.quorumVotes()).to.equal(4);
+    expect(await decisionEngine.quorumVotes()).to.equal(parseEther("4"));
   });
 
   // it("Safe sanity", async () => {
@@ -78,32 +83,32 @@ describe("Example DAO with Minime Token", () => {
   //   await safeExecuteByOwner(safe, accounts.deployer, token.address, data);
   // });
 
-  it("proposalThreshold works more or less in a sane way", async () => {
+  it("proposalThreshold works sane way", async () => {
     // the threshold for proposing is 10%
     let tx: Transaction;
     let data: string;
-    expect(await decisionEngine.proposalThreshold()).to.equal(10);
+    expect(await decisionEngine.proposalThreshold()).to.equal(parseEther("1"));
     // the deployer already has a 1000 tokens
-    expect(await token.balanceOf(accounts.deployer)).to.equal(
-      ethers.utils.parseEther("1000")
-    );
-    // send 10.000 tokens to address1
+    expect(await token.balanceOf(accounts.deployer)).to.equal(parseEther("1"));
+    // send 10 tokens to address1
     data = token.interface.encodeFunctionData("generateTokens", [
-      accounts.address1,
-      ethers.utils.parseEther("10000"),
+      await signer1.getAddress(),
+      parseEther("100"),
     ]);
     await safeExecuteByOwner(safe, accounts.deployer, token.address, data);
-    expect(await token.balanceOf(accounts.address1)).to.equal(
-      ethers.utils.parseEther("10000")
+    expect(await token.balanceOf(await signer1.getAddress())).to.equal(
+      parseEther("100")
     );
     const { targets, values, signatures, calldatas } = NOOP_PROPOSAL;
+
     tx = decisionEngine.propose(targets, values, signatures, calldatas, "");
     await expect(tx).to.be.revertedWith(
       "proposer votes below proposal threshold"
     );
+
     data = token.interface.encodeFunctionData("generateTokens", [
       accounts.deployer,
-      ethers.utils.parseEther("1000"),
+      parseEther("0.2"),
     ]);
     await safeExecuteByOwner(safe, accounts.deployer, token.address, data);
 
@@ -112,7 +117,7 @@ describe("Example DAO with Minime Token", () => {
   });
 
   it("quorumVotes behaves in a sane way", async () => {
-    expect(await decisionEngine.quorumVotes()).to.equal(4);
+    expect(await decisionEngine.quorumVotes()).to.equal(parseEther("4"));
   });
 
   it("Create, vote, and execute", async () => {

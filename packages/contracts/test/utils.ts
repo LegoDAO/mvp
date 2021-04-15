@@ -1,5 +1,8 @@
 import { Contract, Transaction } from "ethers";
 import { encodeParameters } from "../scripts/utils";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { ethers } from "hardhat";
+import { IDAOConfig } from "../scripts/types";
 
 export async function createAProposal(
   decisionEngine: Contract,

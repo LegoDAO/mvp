@@ -1,11 +1,12 @@
 import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
-import { Contract, Transaction } from "ethers";
+import { Contract, Transaction, utils } from "ethers";
 import { safeExecuteByOwner } from "../scripts/utils";
 import { YAY } from "./utils";
 
 const STATE_PENDING = 0;
 const STATE_ACTIVE = 1;
+const parseEther = ethers.utils.parseEther;
 
 function encodeParameters(types: string[], values: string[]) {
   const abi = new ethers.utils.AbiCoder();
@@ -75,26 +76,28 @@ describe("Example DAO with ERC20Snapshot Token", () => {
     expect(await token.owner()).to.equal(safe.address);
 
     // the quorum is 4%
-    expect(await decisionEngine.quorumVotes()).to.equal(4);
+    expect(await decisionEngine.quorumVotes()).to.equal(utils.parseEther("4"));
   });
 
-  it("proposalThreshold seems sane", async () => {
-    // the threshold for proposing is 10%
+  it("proposalThreshold is sane", async () => {
+    // the threshold for proposing is 1%
     let tx: Transaction;
     let data: string;
-    expect(await decisionEngine.proposalThreshold()).to.equal(10);
+    expect(await decisionEngine.proposalThreshold()).to.equal(
+      utils.parseEther("1")
+    );
     // the deployer already has a 1000 tokens
     expect(await token.balanceOf(accounts.deployer)).to.equal(
-      ethers.utils.parseEther("1000")
+      ethers.utils.parseEther("1")
     );
-    // send 10.000 tokens to address1
+    // send 100.000 tokens to address1
     data = token.interface.encodeFunctionData("mint", [
       accounts.address1,
-      ethers.utils.parseEther("10000"),
+      ethers.utils.parseEther("100"),
     ]);
     await safeExecuteByOwner(safe, accounts.deployer, token.address, data);
     expect(await token.balanceOf(accounts.address1)).to.equal(
-      ethers.utils.parseEther("10000")
+      ethers.utils.parseEther("100")
     );
 
     const {
@@ -109,7 +112,7 @@ describe("Example DAO with ERC20Snapshot Token", () => {
     );
     data = token.interface.encodeFunctionData("mint", [
       accounts.deployer,
-      ethers.utils.parseEther("1000"),
+      ethers.utils.parseEther("1"),
     ]);
     await safeExecuteByOwner(safe, accounts.deployer, token.address, data);
 
@@ -118,7 +121,7 @@ describe("Example DAO with ERC20Snapshot Token", () => {
   });
 
   it("quorumVotes behaves in a sane way", async () => {
-    expect(await decisionEngine.quorumVotes()).to.equal(4);
+    expect(await decisionEngine.quorumVotes()).to.equal(parseEther("4"));
   });
 
   it("Create, vote, and execute", async () => {

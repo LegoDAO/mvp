@@ -1,15 +1,18 @@
-import { Contract } from "ethers";
+import { Contract, BigNumber } from "ethers";
 
 export type IDAOConfig = {
-  token: IDeployedToken | ITokenConfig;
-  decisionEngine: {
-    type: string;
-    proposalThreshold: number;
-    quorumVotes: number; // in percentage
-    votingPeriod: number; // in blocks
-    votingDelay: number;
-    proposalMaxOperations: number;
-  };
+  token: IDeployedToken;
+  safe: IDeployedSafe;
+  decisionEngine: IDecisionEngineConfig;
+};
+
+export type IDecisionEngineConfig = {
+  type: string;
+  proposalThreshold: number;
+  quorumVotes: number; // in percentage
+  votingPeriod: number; // in blocks
+  votingDelay: number;
+  proposalMaxOperations: number;
 };
 
 type ITokenType = "Minime" | "ERC20Snapshot";
@@ -17,6 +20,10 @@ type ITokenType = "Minime" | "ERC20Snapshot";
 type IDeployedToken = {
   address: string;
   tokenType: ITokenType;
+};
+
+type IDeployedSafe = {
+  address: string;
 };
 
 export type ITokenConfig = {

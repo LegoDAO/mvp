@@ -41,18 +41,19 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
   /// @notice The name of this contract
   string public constant NAME = "Lego Decision Engine";
 
+  // with how much precision percentages are expressed (i.e. 1.23% is represent as 1.123*PCT_PRECISION)
+  uint256 public constant PCT_PRECISION = 1e18;
   /// @notice The minimum setable proposal threshold, in percent
   uint256 public constant MIN_PROPOSAL_THRESHOLD = 0; // 0 Comp
 
   /// @notice The maximum setable proposal threshold
-  uint256 public constant MAX_PROPOSAL_THRESHOLD = 100; //100%
+  uint256 public constant MAX_PROPOSAL_THRESHOLD = 100 * PCT_PRECISION; //100%
 
-  /// @notice The minimum setable quorum 
+  /// @notice The minimum setable quorum
   uint256 public constant MIN_QUORUM_VOTES = 0; // 0 Comp
 
-  /// @notice The maximum setable quorum 
+  /// @notice The maximum setable quorum
   uint256 public constant MAX_QUORUM_VOTES = 100; //100%
-
 
   /// @notice The minimum settable voting period, in
   // TODO: 10 is very low, 5760, About 24 hours, is a more reasonable value
@@ -77,15 +78,13 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
   bytes32 public constant BALLOT_TYPEHASH =
     keccak256("Ballot(uint256 proposalId,uint8 support)");
 
-
   /// @notice The maximum number of actions that can be included in a proposal
   uint256 public constant proposalMaxOperations = 10; // 10 actions
-
 
   // Receipts of ballots for the entire set of voters
   mapping(uint256 => mapping(address => Receipt)) public receipts;
 
-    /// @notice Administrator for this contract
+  /// @notice Administrator for this contract
   address public admin;
 
   /// @notice The address of the Gnosis Safe
@@ -119,21 +118,20 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
   /// @notice The total number of proposals
   uint256 public proposalCount;
 
-
   /// @notice The latest proposal for each proposer
   mapping(address => uint256) public latestProposalIds;
 
-   /**
+  /**
    * @notice Used to initialize the contract during delegator contructor
    * @param safe_ The address of the Timelock
    * @param token_ The address of the COMP token
    * @param votingPeriod_ The initial voting period
    * @param votingDelay_ The initial voting delay
    * @param proposalThreshold_ The initial proposal threshold
-   * @param quorumVotes_ The amount of votes 
+   * @param quorumVotes_ The amount of votes
    */
   function initialize(
-    address owner_, 
+    address owner_,
     address safe_,
     address token_,
     TokenType tokenType_,
@@ -142,7 +140,6 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
     uint256 proposalThreshold_,
     uint256 quorumVotes_
   ) public {
-
     require(
       address(safe) == address(0),
       "GovernorBravo::initialize: can only initialize once"
@@ -175,7 +172,6 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
       "GovernorBravo::initialize: invalid quorum"
     );
 
-
     admin = owner_;
     safe = IGnosisSafe(safe_);
     tokenType = tokenType_;
@@ -186,7 +182,7 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
     quorumVotes = quorumVotes_;
   }
 
- /* @dev return the voting power of member at the given blockNumber as a percentage of the total voting pwoer
+  /* @dev return the voting power of member at the given blockNumber as a percentage of the total voting pwoer
    * NB: the voting power is rounded down to the nearest percentage point,
    * (which is fine for where it is used to check the proposalThreshold and quorumVotes, which are expressed in percentages)
    *
@@ -200,7 +196,11 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
     if (totalBalance == 0) {
       return 0;
     }
-    return balance.mul(100).div(totalBalance);
+    require(
+      balance <= totalBalance,
+      "DecisionEngine:votingPower: balance must be less than totalBalance"
+    );
+    return balance.mul(PCT_PRECISION).div(totalBalance).mul(100);
   }
 
   /** @dev propose to execute a series of transactions
@@ -211,34 +211,36 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
     string[] memory signatures,
     bytes[] memory calldatas,
     string memory description
-  ) public returns (uint256) {
+  ) public override returns (uint256) {
     uint256 startBlock = block.number.add(votingDelay);
     uint256 endBlock = startBlock.add(votingPeriod);
     uint256 snapshotId;
     if (tokenType == TokenType.Minime) {
-      snapshotId = block.number;
+      snapshotId = block.number - 1;
     } else if (tokenType == TokenType.ERC20Snapshot) {
       snapshotId = IERC20Snapshot(token).snapshot();
     }
+    // note that the check if for > proposalTreshold rather than >= proposalThreshold
+    // so the error message is slightly off. We keep this to stay faithful to GovernorBravoDelegate.sol
     require(
       votingPower(
         IMiniMetoken(token).balanceOfAt(msg.sender, snapshotId),
         IMiniMetoken(token).totalSupplyAt(snapshotId)
       ) > proposalThreshold,
-      "GovernorAlpha::propose: proposer votes below proposal threshold"
+      "GovernorBravo::propose: proposer votes below proposal threshold"
     );
 
     require(
       targets.length == values.length && targets.length == calldatas.length,
-      "GovernorAlpha::propose: proposal function information arity mismatch"
+      "GovernorBravo::propose: proposal function information arity mismatch"
     );
     require(
       targets.length != 0,
-      "GovernorAlpha::propose: must provide actions"
+      "GovernorBravo::propose: must provide actions"
     );
     require(
       targets.length <= proposalMaxOperations,
-      "GovernorAlpha::propose: too many actions"
+      "GovernorBravo::propose: too many actions"
     );
 
     uint256 latestProposalId = latestProposalIds[msg.sender];
@@ -246,11 +248,11 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
       ProposalState proposersLatestProposalState = state(latestProposalId);
       require(
         proposersLatestProposalState != ProposalState.Active,
-        "GovernorAlpha::propose: one live proposal per proposer, found an already active proposal"
+        "GovernorBravo::propose: one live proposal per proposer, found an already active proposal"
       );
       require(
         proposersLatestProposalState != ProposalState.Pending,
-        "GovernorAlpha::propose: one live proposal per proposer, found an already pending proposal"
+        "GovernorBravo::propose: one live proposal per proposer, found an already pending proposal"
       );
     }
 
@@ -291,7 +293,7 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
   /** approve the Hash of the transaction in gnosis safe, to be executed there
   
    */
-  function queue(uint256 proposalId) public {
+  function queue(uint256 proposalId) public override {
     require(
       state(proposalId) == ProposalState.Succeeded,
       "GovernorAlpha::execute: proposal can only be approved if it is Succeeded"
@@ -328,7 +330,7 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
   /** 
 
   */
-  function execute(uint256 proposalId) public {
+  function execute(uint256 proposalId) public override {
     require(
       state(proposalId) == ProposalState.Succeeded,
       "GovernorAlpha::execute: proposal can only be executed if it is Succeeded"
@@ -369,6 +371,7 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
   function getActions(uint256 proposalId)
     public
     view
+    override
     returns (
       address[] memory targets,
       uint256[] memory values,
@@ -382,6 +385,7 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
   function getReceipt(uint256 proposalId, address voter)
     public
     view
+    override
     returns (Receipt memory)
   {
     return receipts[proposalId][voter];
@@ -402,10 +406,13 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
     } else if (block.number <= proposal.endBlock) {
       return ProposalState.Active;
     } else if (
-      votingPower(proposal.forVotes, IERC20Snapshot(token).totalSupplyAt(proposal.snapshotId)) < quorumVotes
+      votingPower(
+        proposal.forVotes,
+        IERC20Snapshot(token).totalSupplyAt(proposal.snapshotId)
+      ) < quorumVotes
     ) {
       return ProposalState.Defeated;
-    // TODO: we are not using eta eta, so it is always 0, and the cases stop here! 
+      // TODO: we are not using eta eta, so it is always 0, and the cases stop here!
     } else if (proposal.eta == 0) {
       return ProposalState.Succeeded;
     } else if (proposal.executed) {
@@ -418,177 +425,247 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
     }
   }
 
-    /**
-      * @notice Cast a vote for a proposal
-      * @param proposalId The id of the proposal to vote on
-      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
-      */
-    function castVote(uint proposalId, uint8 support) external {
-        emit VoteCast(msg.sender, proposalId, support, castVoteInternal(msg.sender, proposalId, support), "");
+  /**
+   * @notice Cast a vote for a proposal
+   * @param proposalId The id of the proposal to vote on
+   * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+   */
+  function castVote(uint256 proposalId, uint8 support) external override {
+    emit VoteCast(
+      msg.sender,
+      proposalId,
+      support,
+      castVoteInternal(msg.sender, proposalId, support),
+      ""
+    );
+  }
+
+  /**
+   * @notice Cast a vote for a proposal with a reason
+   * @param proposalId The id of the proposal to vote on
+   * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+   * @param reason The reason given for the vote by the voter
+   */
+  function castVoteWithReason(
+    uint256 proposalId,
+    uint8 support,
+    string calldata reason
+  ) external override {
+    emit VoteCast(
+      msg.sender,
+      proposalId,
+      support,
+      castVoteInternal(msg.sender, proposalId, support),
+      reason
+    );
+  }
+
+  /**
+   * @notice Cast a vote for a proposal by signature
+   * @dev External function that accepts EIP-712 signatures for voting on proposals.
+   */
+  function castVoteBySig(
+    uint256 proposalId,
+    uint8 support,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external override {
+    bytes32 domainSeparator =
+      keccak256(
+        abi.encode(
+          DOMAIN_TYPEHASH,
+          keccak256(bytes(NAME)),
+          getChainIdInternal(),
+          address(this)
+        )
+      );
+    bytes32 structHash =
+      keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support));
+    bytes32 digest =
+      keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+    address signatory = ecrecover(digest, v, r, s);
+    require(
+      signatory != address(0),
+      "GovernorBravo::castVoteBySig: invalid signature"
+    );
+    emit VoteCast(
+      signatory,
+      proposalId,
+      support,
+      castVoteInternal(signatory, proposalId, support),
+      ""
+    );
+  }
+
+  /**
+   * @notice Internal function that caries out voting logic
+   * @param voter The voter that is casting their vote
+   * @param proposalId The id of the proposal to vote on
+   * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+   * @return The number of votes cast
+   */
+  function castVoteInternal(
+    address voter,
+    uint256 proposalId,
+    uint8 support
+  ) internal returns (uint96) {
+    require(
+      state(proposalId) == ProposalState.Active,
+      "GovernorBravo::castVoteInternal: voting is closed"
+    );
+    require(support <= 2, "GovernorBravo::castVoteInternal: invalid vote type");
+    Proposal storage proposal = proposals[proposalId];
+    Receipt storage receipt = proposal.receipts[voter];
+    require(
+      receipt.hasVoted == false,
+      "GovernorBravo::castVoteInternal: voter already voted"
+    );
+    uint96 votes =
+      IERC20Snapshot(token).balanceOfAt(voter, proposal.snapshotId);
+
+    if (support == 0) {
+      proposal.againstVotes = add256(proposal.againstVotes, votes);
+    } else if (support == 1) {
+      proposal.forVotes = add256(proposal.forVotes, votes);
+    } else if (support == 2) {
+      proposal.abstainVotes = add256(proposal.abstainVotes, votes);
     }
 
+    receipt.hasVoted = true;
+    receipt.support = support;
+    receipt.votes = votes;
 
-    /**
-      * @notice Cast a vote for a proposal with a reason
-      * @param proposalId The id of the proposal to vote on
-      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
-      * @param reason The reason given for the vote by the voter
-      */
-    function castVoteWithReason(uint proposalId, uint8 support, string calldata reason) external {
-        emit VoteCast(msg.sender, proposalId, support, castVoteInternal(msg.sender, proposalId, support), reason);
+    return votes;
+  }
+
+  /**
+   * @notice Admin function for setting the voting delay
+   * @param newVotingDelay new voting delay, in blocks
+   */
+  function _setVotingDelay(uint256 newVotingDelay) external {
+    require(msg.sender == admin, "GovernorBravo::_setVotingDelay: admin only");
+    require(
+      newVotingDelay >= MIN_VOTING_DELAY && newVotingDelay <= MAX_VOTING_DELAY,
+      "GovernorBravo::_setVotingDelay: invalid voting delay"
+    );
+    uint256 oldVotingDelay = votingDelay;
+    votingDelay = newVotingDelay;
+
+    emit VotingDelaySet(oldVotingDelay, votingDelay);
+  }
+
+  /**
+   * @notice Admin function for setting the voting period
+   * @param newVotingPeriod new voting period, in blocks
+   */
+  function _setVotingPeriod(uint256 newVotingPeriod) external {
+    require(msg.sender == admin, "GovernorBravo::_setVotingPeriod: admin only");
+    require(
+      newVotingPeriod >= MIN_VOTING_PERIOD &&
+        newVotingPeriod <= MAX_VOTING_PERIOD,
+      "GovernorBravo::_setVotingPeriod: invalid voting period"
+    );
+    uint256 oldVotingPeriod = votingPeriod;
+    votingPeriod = newVotingPeriod;
+
+    emit VotingPeriodSet(oldVotingPeriod, votingPeriod);
+  }
+
+  /**
+   * @notice Admin function for setting the proposal threshold
+   * @dev newProposalThreshold must be greater than the hardcoded min
+   * @param newProposalThreshold new proposal threshold
+   */
+  function _setProposalThreshold(uint256 newProposalThreshold) external {
+    require(
+      msg.sender == admin,
+      "GovernorBravo::_setProposalThreshold: admin only"
+    );
+    require(
+      newProposalThreshold >= MIN_PROPOSAL_THRESHOLD &&
+        newProposalThreshold <= MAX_PROPOSAL_THRESHOLD,
+      "GovernorBravo::_setProposalThreshold: invalid proposal threshold"
+    );
+    uint256 oldProposalThreshold = proposalThreshold;
+    proposalThreshold = newProposalThreshold;
+
+    emit ProposalThresholdSet(oldProposalThreshold, proposalThreshold);
+  }
+
+  /**
+   * @notice Admin function for setting the proposal threshold
+   * @dev newQuorumVotes must be greater than the hardcoded min
+   * @param newQuorumVotes new quorum votes
+   */
+  function _setQuorumVotes(uint256 newQuorumVotes) external {
+    require(msg.sender == admin, "GovernorBravo::_setQuorumVotes: admin only");
+    require(
+      newQuorumVotes >= MIN_QUORUM_VOTES && newQuorumVotes <= MAX_QUORUM_VOTES,
+      "GovernorBravo::_setQuorumVotes: invalid quorum"
+    );
+    uint256 oldQuorumVotes = quorumVotes;
+    quorumVotes = newQuorumVotes;
+    emit QuorumVotesSet(oldQuorumVotes, newQuorumVotes);
+  }
+
+  // /**
+  //   * @notice Begins transfer of admin rights. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
+  //   * @dev Admin function to begin change of admin. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
+  //   * @param newPendingAdmin New pending admin.
+  //   */
+  // function _setPendingAdmin(address newPendingAdmin) external {
+  //     // Check caller = admin
+  //     require(msg.sender == admin, "GovernorBravo:_setPendingAdmin: admin only");
+
+  //     // Save current value, if any, for inclusion in log
+  //     address oldPendingAdmin = pendingAdmin;
+
+  //     // Store pendingAdmin with value newPendingAdmin
+  //     pendingAdmin = newPendingAdmin;
+
+  //     // Emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin)
+  //     emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin);
+  // }
+
+  // /**
+  //   * @notice Accepts transfer of admin rights. msg.sender must be pendingAdmin
+  //   * @dev Admin function for pending admin to accept role and update admin
+  //   */
+  // function _acceptAdmin() external {
+  //     // Check caller is pendingAdmin and pendingAdmin ≠ address(0)
+  //     require(msg.sender == pendingAdmin && msg.sender != address(0), "GovernorBravo:_acceptAdmin: pending admin only");
+
+  //     // Save current values for inclusion in log
+  //     address oldAdmin = admin;
+  //     address oldPendingAdmin = pendingAdmin;
+
+  //     // Store admin with value pendingAdmin
+  //     admin = pendingAdmin;
+
+  //     // Clear the pending value
+  //     pendingAdmin = address(0);
+
+  //     emit NewAdmin(oldAdmin, admin);
+  //     emit NewPendingAdmin(oldPendingAdmin, pendingAdmin);
+  // }
+
+  function add256(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    require(c >= a, "addition overflow");
+    return c;
+  }
+
+  function sub256(uint256 a, uint256 b) internal pure returns (uint256) {
+    require(b <= a, "subtraction underflow");
+    return a - b;
+  }
+
+  function getChainIdInternal() internal pure returns (uint256) {
+    uint256 chainId;
+    assembly {
+      chainId := chainid()
     }
-
-    /**
-      * @notice Cast a vote for a proposal by signature
-      * @dev External function that accepts EIP-712 signatures for voting on proposals.
-      */
-    function castVoteBySig(uint proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) external {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(NAME)), getChainIdInternal(), address(this)));
-        bytes32 structHash = keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
-        address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "GovernorBravo::castVoteBySig: invalid signature");
-        emit VoteCast(signatory, proposalId, support, castVoteInternal(signatory, proposalId, support), "");
-    }
-
-    /**
-      * @notice Internal function that caries out voting logic
-      * @param voter The voter that is casting their vote
-      * @param proposalId The id of the proposal to vote on
-      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
-      * @return The number of votes cast
-      */
-    function castVoteInternal(address voter, uint proposalId, uint8 support) internal returns (uint96) {
-        require(state(proposalId) == ProposalState.Active, "GovernorBravo::castVoteInternal: voting is closed");
-        require(support <= 2, "GovernorBravo::castVoteInternal: invalid vote type");
-        Proposal storage proposal = proposals[proposalId];
-        Receipt storage receipt = proposal.receipts[voter];
-        require(receipt.hasVoted == false, "GovernorBravo::castVoteInternal: voter already voted");
-        uint96 votes = IERC20Snapshot(token).balanceOfAt(voter, proposal.snapshotId);
-
-        if (support == 0) {
-            proposal.againstVotes = add256(proposal.againstVotes, votes);
-        } else if (support == 1) {
-            proposal.forVotes = add256(proposal.forVotes, votes);
-        } else if (support == 2) {
-            proposal.abstainVotes = add256(proposal.abstainVotes, votes);
-        }
-
-        receipt.hasVoted = true;
-        receipt.support = support;
-        receipt.votes = votes;
-
-        return votes;
-    }
-
-    /**
-      * @notice Admin function for setting the voting delay
-      * @param newVotingDelay new voting delay, in blocks
-      */
-    function _setVotingDelay(uint newVotingDelay) external {
-        require(msg.sender == admin, "GovernorBravo::_setVotingDelay: admin only");
-        require(newVotingDelay >= MIN_VOTING_DELAY && newVotingDelay <= MAX_VOTING_DELAY, "GovernorBravo::_setVotingDelay: invalid voting delay");
-        uint oldVotingDelay = votingDelay;
-        votingDelay = newVotingDelay;
-
-        emit VotingDelaySet(oldVotingDelay,votingDelay);
-    }
-
-    /**
-      * @notice Admin function for setting the voting period
-      * @param newVotingPeriod new voting period, in blocks
-      */
-    function _setVotingPeriod(uint newVotingPeriod) external {
-        require(msg.sender == admin, "GovernorBravo::_setVotingPeriod: admin only");
-        require(newVotingPeriod >= MIN_VOTING_PERIOD && newVotingPeriod <= MAX_VOTING_PERIOD, "GovernorBravo::_setVotingPeriod: invalid voting period");
-        uint oldVotingPeriod = votingPeriod;
-        votingPeriod = newVotingPeriod;
-
-        emit VotingPeriodSet(oldVotingPeriod, votingPeriod);
-    }
-
-    /**
-      * @notice Admin function for setting the proposal threshold
-      * @dev newProposalThreshold must be greater than the hardcoded min
-      * @param newProposalThreshold new proposal threshold
-      */
-    function _setProposalThreshold(uint newProposalThreshold) external {
-        require(msg.sender == admin, "GovernorBravo::_setProposalThreshold: admin only");
-        require(newProposalThreshold >= MIN_PROPOSAL_THRESHOLD && newProposalThreshold <= MAX_PROPOSAL_THRESHOLD, "GovernorBravo::_setProposalThreshold: invalid proposal threshold");
-        uint oldProposalThreshold = proposalThreshold;
-        proposalThreshold = newProposalThreshold;
-
-        emit ProposalThresholdSet(oldProposalThreshold, proposalThreshold);
-    }
-    /**
-      * @notice Admin function for setting the proposal threshold
-      * @dev newQuorumVotes must be greater than the hardcoded min
-      * @param newQuorumVotes new quorum votes
-      */
-    function _setQuorumVotes(uint newQuorumVotes) external {
-        require(msg.sender == admin, "GovernorBravo::_setQuorumVotes: admin only");
-        require(newQuorumVotes >= MIN_QUORUM_VOTES && newQuorumVotes <= MAX_QUORUM_VOTES, "GovernorBravo::_setQuorumVotes: invalid quorum");
-        uint oldQuorumVotes = quorumVotes;
-        quorumVotes = newQuorumVotes;
-        emit QuorumVotesSet(oldQuorumVotes, newQuorumVotes);
-    }
-
- 
-    // /**
-    //   * @notice Begins transfer of admin rights. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
-    //   * @dev Admin function to begin change of admin. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
-    //   * @param newPendingAdmin New pending admin.
-    //   */
-    // function _setPendingAdmin(address newPendingAdmin) external {
-    //     // Check caller = admin
-    //     require(msg.sender == admin, "GovernorBravo:_setPendingAdmin: admin only");
-
-    //     // Save current value, if any, for inclusion in log
-    //     address oldPendingAdmin = pendingAdmin;
-
-    //     // Store pendingAdmin with value newPendingAdmin
-    //     pendingAdmin = newPendingAdmin;
-
-    //     // Emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin)
-    //     emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin);
-    // }
-
-    // /**
-    //   * @notice Accepts transfer of admin rights. msg.sender must be pendingAdmin
-    //   * @dev Admin function for pending admin to accept role and update admin
-    //   */
-    // function _acceptAdmin() external {
-    //     // Check caller is pendingAdmin and pendingAdmin ≠ address(0)
-    //     require(msg.sender == pendingAdmin && msg.sender != address(0), "GovernorBravo:_acceptAdmin: pending admin only");
-
-    //     // Save current values for inclusion in log
-    //     address oldAdmin = admin;
-    //     address oldPendingAdmin = pendingAdmin;
-
-    //     // Store admin with value pendingAdmin
-    //     admin = pendingAdmin;
-
-    //     // Clear the pending value
-    //     pendingAdmin = address(0);
-
-    //     emit NewAdmin(oldAdmin, admin);
-    //     emit NewPendingAdmin(oldPendingAdmin, pendingAdmin);
-    // }
-
-    function add256(uint256 a, uint256 b) internal pure returns (uint) {
-        uint c = a + b;
-        require(c >= a, "addition overflow");
-        return c;
-    }
-
-    function sub256(uint256 a, uint256 b) internal pure returns (uint) {
-        require(b <= a, "subtraction underflow");
-        return a - b;
-    }
-
-    function getChainIdInternal() internal pure returns (uint) {
-        uint chainId;
-        assembly { chainId := chainid() }
-        return chainId;
-    }
+    return chainId;
+  }
 }

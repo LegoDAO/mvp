@@ -15,21 +15,16 @@ import { ethers } from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction, Deployment } from "hardhat-deploy/types";
 import { safeAddOwner } from "../scripts/utils";
-import { IDAOConfig } from "../scripts/types";
+import { IDAOConfig, IDecisionEngineConfig } from "../scripts/types";
+import { deployDAO } from "./utils";
 
-const DaoConfig: IDAOConfig = {
-  token: {
-    name: "ERC20SnapshotExample",
-    tokenType: "ERC20Snapshot",
-  },
-  decisionEngine: {
-    type: "DecisionEngine01",
-    proposalThreshold: 10, // in percentage
-    quorumVotes: 4, // in percentage
-    votingPeriod: 10, // in blocks
-    votingDelay: 1,
-    proposalMaxOperations: 10,
-  },
+const decisionEngineConfig: IDecisionEngineConfig = {
+  type: "DecisionEngine01",
+  proposalThreshold: 1, // in percentage
+  quorumVotes: 4, // in percentage
+  votingPeriod: 10, // in blocks
+  votingDelay: 1,
+  proposalMaxOperations: 10,
 };
 
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
@@ -43,51 +38,23 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     from: deployer,
   });
 
+  const daoConfig: IDAOConfig = {
+    safe: { address: safeDeployment.address },
+    token: { address: tokenDeployment.address, tokenType: "ERC20Snapshot" },
+    decisionEngine: decisionEngineConfig,
+  };
+
   const token = await ethers.getContractAt(
     "ERC20SnapshotExample",
     tokenDeployment.address
   );
 
-  let tokenType;
-  if (DaoConfig.token.tokenType === "Minime") {
-    tokenType = 0;
-  } else if (DaoConfig.token.tokenType === "ERC20Snapshot") {
-    tokenType = 1;
-  } else {
-    throw Error(`Unknown token type: "${DaoConfig.token.tokenType}"`);
-  }
-  const deployment = await deploy("DecisionEngine01", {
-    from: deployer,
-    log: true,
-    proxy: true
-  });
-
-  const decisionEngine = await ethers.getContractAt("DecisionEngine01", deployment.address)
-  await decisionEngine.initialize(
-    deployer,
-    safe.address, // Gnosis Safe address
-    token.address,
-    tokenType,
-    DaoConfig.decisionEngine.votingPeriod,
-    DaoConfig.decisionEngine.votingDelay,
-    DaoConfig.decisionEngine.proposalThreshold,
-    DaoConfig.decisionEngine.quorumVotes,
-  )
-
-  // add the decision engine as a signer to the contract
-
-  await safeAddOwner(
-    safe, // safe
-    deployer, // prevOwner
-    deployment.address.toLowerCase(), // the Decision Engine's address
-    1 // the threshold for the multisig
-  );
-
   // generate some tokens before transfering ownership of the token
-  await token.mint(deployer, ethers.utils.parseEther("1000"));
+  await token.mint(deployer, ethers.utils.parseEther("1"));
 
+  await deployDAO(hre, daoConfig);
   // make the safe the solo owner of the token
-  await token.transferOwnership(safe.address);
+  // await token.transferOwnership(safe.address);
 };
 export default func;
 func.tags = ["ExampleDAOWithERC20Snapshot"];

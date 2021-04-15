@@ -1,7 +1,7 @@
 import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { Contract } from "ethers";
-import { safeAddOwner, } from "../scripts/utils";
+import { safeAddOwner } from "../scripts/utils";
 import { createAProposal, YAY } from "./utils";
 
 const STATE_PENDING = 0;

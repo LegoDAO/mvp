@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 import "../interfaces/IGnosisSafe.sol";
 import "../interfaces/IMiniMetoken.sol";
 import "../interfaces/IERC20Snapshot.sol";
+
 // import "@gnosis.pm/safe-contracts/contracts/libraries/MultiSend.sol";
 
 /*** This interface is based on the GovernorBravo interface
@@ -26,7 +27,7 @@ interface IGovernorBravoDecisionEngine {
     uint256 snapshotId
   );
 
- /// @notice An event emitted when a vote has been cast on a proposal
+  /// @notice An event emitted when a vote has been cast on a proposal
   /// @param voter The address which casted a vote
   /// @param proposalId The proposal id which was voted on
   /// @param support Support value for the vote. 0=against, 1=for, 2=abstain
@@ -57,7 +58,6 @@ interface IGovernorBravoDecisionEngine {
 
   /// @notice An event emitted when the voting period is set
   event QuorumVotesSet(uint256 oldQuorumVotes, uint256 newQuorumVotes);
-
 
   /// @notice Emitted when implementation is changed
   event NewImplementation(address oldImplementation, address newImplementation);
@@ -128,6 +128,44 @@ interface IGovernorBravoDecisionEngine {
     Expired,
     Executed
   }
+
+  function propose(
+    address[] memory targets,
+    uint256[] memory values,
+    string[] memory signatures,
+    bytes[] memory calldatas,
+    string memory description
+  ) external returns (uint256);
+
+  function castVote(uint256 proposalId, uint8 support) external;
+
+  function castVoteWithReason(
+    uint256 proposalId,
+    uint8 support,
+    string calldata reason
+  ) external;
+
+  function castVoteBySig(
+    uint256 proposalId,
+    uint8 support,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) external;
+
+  function queue(uint256 proposalId) external;
+
+  function execute(uint256 proposalId) external;
+
+  function getActions(uint256 proposalId)
+    external
+    returns (
+      address[] memory targets,
+      uint256[] memory values,
+      bytes[] memory calldatas
+    );
+
+  function getReceipt(uint256 proposalId, address voter)
+    external
+    returns (Receipt memory);
 }
-
-
