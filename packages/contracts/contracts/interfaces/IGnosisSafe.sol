@@ -1,3 +1,5 @@
+pragma solidity ^0.7.3;
+
 interface IGnosisSafe {
   enum Operation {Call, DelegateCall}
 

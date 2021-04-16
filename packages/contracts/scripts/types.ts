@@ -15,11 +15,11 @@ export type IDecisionEngineConfig = {
   proposalMaxOperations: number;
 };
 
-type ITokenType = "Minime" | "ERC20Snapshot";
+type ITokenType = "Minime" | "ERC20Snapshot" | "Compound";
 
 type IDeployedToken = {
   address: string;
-  tokenType: ITokenType;
+  tokenType?: ITokenType;
 };
 
 type IDeployedSafe = {
@@ -33,8 +33,9 @@ export type ITokenConfig = {
 
 export type ILegoDeployment = {
   token: Contract;
+  tokenAdapter?: Contract;
   safe: Contract;
-  decisionEgine: Contract;
+  decisionEngine: Contract;
 };
 
 export type ISafeConfig = {};

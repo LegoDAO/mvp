@@ -1308,6 +1308,10 @@
     "@ethersproject/properties" "^5.1.0"
     "@ethersproject/strings" "^5.1.0"
 
+"@gnosis.pm/mock-contract@https://github.com/gnosis/mock-contract#b3db814ac41a3b632d8441cd1fbfbfce54e056f7":
+  version "4.0.0"
+  resolved "https://github.com/gnosis/mock-contract#b3db814ac41a3b632d8441cd1fbfbfce54e056f7"
+
 "@gnosis.pm/safe-contracts@^1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@gnosis.pm/safe-contracts/-/safe-contracts-1.2.0.tgz#33e8332e09c19e8822fccb06c7d3eff806d091f6"
@@ -10515,13 +10519,13 @@ hard-rejection@^2.1.0:
     hardhat-typechain "^0.3.3"
     hardhat-watcher "^2.1.1"
     minimetoken "https://github.com/Giveth/minime.git"
-    prettier "^2.2.1"
-    prettier-plugin-solidity "^1.0.0-beta.3"
-    solidity-coverage "^0.7.14"
     ts-generator "^0.1.1"
-    ts-node "^9.1.1"
     typechain "^3.0.0"
-    typescript "^4.1.3"
+
+hardhat-deploy-ethers@^0.3.0-beta.7:
+  version "0.3.0-beta.7"
+  resolved "https://registry.yarnpkg.com/hardhat-deploy-ethers/-/hardhat-deploy-ethers-0.3.0-beta.7.tgz#860d86b84ed3c4fdef64283ccf1e8d5623454d02"
+  integrity sha512-JKMNte6vudu9LSNqgmBtNxc1gfxp3NUcPKVAf/FANHfl9pa/mBGg6hpQO7tD8CLkAbe6f4K5BjyYIPWX3p7MKw==
 
 hardhat-deploy@^0.7.0-beta.44:
   version "0.7.4"

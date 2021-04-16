@@ -1,16 +1,10 @@
 import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
-import { Contract, Transaction, utils } from "ethers";
-import { safeExecuteByOwner } from "../scripts/utils";
-import { YAY } from "./utils";
-
-const STATE_PENDING = 0;
-const STATE_ACTIVE = 1;
-
-function encodeParameters(types: string[], values: string[]) {
-  const abi = new ethers.utils.AbiCoder();
-  return abi.encode(types, values);
-}
+import { Contract, utils } from "ethers";
+import { decisionEngineConfig } from "./utils";
+import { IDAOConfig } from "../scripts/types";
+import { deployDAO } from "../scripts/deployDAO";
+import { deploySafe } from "../scripts/deploySafe";
 
 describe("DecisionEngine01 configuration and voting power", () => {
   let decisionEngine: Contract;
@@ -22,16 +16,23 @@ describe("DecisionEngine01 configuration and voting power", () => {
   let fixture: any;
 
   beforeEach(async () => {
-    fixture = await deployments.fixture(["ExampleDAOWithERC20Snapshot"]);
-    decisionEngine = await ethers.getContractAt(
-      "DecisionEngine01",
-      fixture.DecisionEngine01.address
-    );
+    fixture = await deployments.fixture(["ERC20SnapshotExample"]);
     token = await ethers.getContractAt(
       "ERC20SnapshotExample",
       fixture.ERC20SnapshotExample.address
     );
-    safe = await ethers.getContractAt("GnosisSafe", fixture.GnosisSafe.address);
+    const safeDeployment = await deploySafe({});
+    safe = safeDeployment.safe;
+
+    const daoConfig: IDAOConfig = {
+      safe: { address: safe.address },
+      token: { address: token.address },
+      decisionEngine: decisionEngineConfig,
+    };
+
+    const deployment = await deployDAO(daoConfig);
+    decisionEngine = deployment.decisionEngine;
+
     accounts = await getNamedAccounts();
     signers = await ethers.getSigners();
     signer = signers[0];

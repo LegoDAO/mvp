@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { ethers, deployments } from "hardhat";
 import { Contract } from "ethers";
 
-// eslint-disable-next-line func-names
 describe("Token contract", function () {
   let token: Contract;
   let owner: any;

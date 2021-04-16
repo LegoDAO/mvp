@@ -24,6 +24,8 @@
     "test:watch": "lerna run test:watch"
   },
   "dependencies": {
-    "hardhat-boilerplate": "file:packages/contracts"
+    "@gnosis.pm/mock-contract": "https://github.com/gnosis/mock-contract#b3db814ac41a3b632d8441cd1fbfbfce54e056f7",
+    "hardhat-boilerplate": "file:packages/contracts",
+    "hardhat-deploy-ethers": "^0.3.0-beta.7"
   }
 }

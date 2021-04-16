@@ -123,12 +123,12 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
 
   /**
    * @notice Used to initialize the contract during delegator contructor
-   * @param safe_ The address of the Timelock
-   * @param token_ The address of the COMP token
+   * @param safe_ The address of the Gnosis Safe
+   * @param token_ The address of the governance token
    * @param votingPeriod_ The initial voting period
    * @param votingDelay_ The initial voting delay
-   * @param proposalThreshold_ The initial proposal threshold
-   * @param quorumVotes_ The amount of votes
+   * @param proposalThreshold_ The initial proposal threshold, in PCT_PRECISION
+   * @param quorumVotes_ The amount of votes needed to pass a proposal, in PCT_PRECISION
    */
   function initialize(
     address owner_,
@@ -147,11 +147,11 @@ contract DecisionEngine01 is IGovernorBravoDecisionEngine {
     // require(msg.sender == admin, "GovernorBravo::initialize: admin only");
     require(
       safe_ != address(0),
-      "GovernorBravo::initialize: invalid timelock address"
+      "GovernorBravo::initialize: invalid safe address"
     );
     require(
       token_ != address(0),
-      "GovernorBravo::initialize: invalid comp address"
+      "GovernorBravo::initialize: invalid token address"
     );
     require(
       votingPeriod_ >= MIN_VOTING_PERIOD && votingPeriod_ <= MAX_VOTING_PERIOD,

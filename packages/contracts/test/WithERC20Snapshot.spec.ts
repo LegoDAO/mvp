@@ -1,11 +1,18 @@
 import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { Contract, Transaction, utils } from "ethers";
-import { safeExecuteByOwner } from "../scripts/utils";
-import { YAY } from "./utils";
+import {
+  YAY,
+  decisionEngineConfig,
+  exampleProposalData,
+  mineABlock,
+  STATE_PENDING,
+  STATE_ACTIVE,
+} from "./utils";
+import { deployDAO } from "../scripts/deployDAO";
+import { deploySafe } from "../scripts/deploySafe";
+import { IDAOConfig } from "../scripts/types";
 
-const STATE_PENDING = 0;
-const STATE_ACTIVE = 1;
 const parseEther = ethers.utils.parseEther;
 
 function encodeParameters(types: string[], values: string[]) {
@@ -21,42 +28,28 @@ describe("Example DAO with ERC20Snapshot Token", () => {
   let signers: any[];
   let signer: any;
   let fixture: any;
-  let NOOP_PROPOSAL: any;
   let ProposalToMint10TokensToAddress1: any;
 
   beforeEach(async () => {
-    fixture = await deployments.fixture(["ExampleDAOWithERC20Snapshot"]);
-    decisionEngine = await ethers.getContractAt(
-      "DecisionEngine01",
-      fixture.DecisionEngine01.address
-    );
+    fixture = await deployments.fixture(["ERC20SnapshotExample"]);
     token = await ethers.getContractAt(
       "ERC20SnapshotExample",
       fixture.ERC20SnapshotExample.address
     );
-    safe = await ethers.getContractAt("GnosisSafe", fixture.GnosisSafe.address);
+    safe = (await deploySafe({})).safe;
+
+    const daoConfig: IDAOConfig = {
+      safe: { address: safe.address },
+      token: { address: token.address, tokenType: "ERC20Snapshot" },
+      decisionEngine: decisionEngineConfig,
+    };
+
+    const deployment = await deployDAO(daoConfig);
+    decisionEngine = deployment.decisionEngine;
+
     accounts = await getNamedAccounts();
     signers = await ethers.getSigners();
     signer = signers[0];
-
-    // for the purposes of this test, make the decision engine the sole owner of the safe
-    // safeSwapOwner(safe, accounts.deployer, decisionEngine.address);
-
-    // and send some ether to the safe so it has some money to spend
-    // Send 1 ether to an ens name.
-    // const tx = await signer.sendTransaction({
-    //   to: safe.address,
-    //   value: ethers.utils.parseEther("0.1"),
-    // });
-
-    ProposalToMint10TokensToAddress1 = {
-      targets: [token.address],
-      values: ["0"],
-      signatures: ["mint(address,uint256)"],
-      calldatas: [
-        encodeParameters(["address", "uint"], [accounts.address1, 10]),
-      ],
-    };
   });
 
   it("Governance should have sane settings", async () => {
@@ -72,9 +65,6 @@ describe("Example DAO with ERC20Snapshot Token", () => {
     // the safe is a 1/2 multisig
     expect(await safe.getThreshold()).to.equal(1);
 
-    // the token is owned by the safe
-    expect(await token.owner()).to.equal(safe.address);
-
     // the quorum is 4%
     expect(await decisionEngine.quorumVotes()).to.equal(utils.parseEther("4"));
   });
@@ -82,20 +72,16 @@ describe("Example DAO with ERC20Snapshot Token", () => {
   it("proposalThreshold is sane", async () => {
     // the threshold for proposing is 1%
     let tx: Transaction;
-    let data: string;
     expect(await decisionEngine.proposalThreshold()).to.equal(
       utils.parseEther("1")
     );
-    // the deployer already has a 1000 tokens
+    // the deployer has a 1 token
+    await token.mint(accounts.deployer, ethers.utils.parseEther("1"));
     expect(await token.balanceOf(accounts.deployer)).to.equal(
       ethers.utils.parseEther("1")
     );
-    // send 100.000 tokens to address1
-    data = token.interface.encodeFunctionData("mint", [
-      accounts.address1,
-      ethers.utils.parseEther("100"),
-    ]);
-    await safeExecuteByOwner(safe, accounts.deployer, token.address, data);
+    // 100 tokens to address1
+    await token.mint(accounts.address1, ethers.utils.parseEther("100"));
     expect(await token.balanceOf(accounts.address1)).to.equal(
       ethers.utils.parseEther("100")
     );
@@ -105,17 +91,13 @@ describe("Example DAO with ERC20Snapshot Token", () => {
       values,
       signatures,
       calldatas,
-    } = ProposalToMint10TokensToAddress1;
+    } = await exampleProposalData();
+
     tx = decisionEngine.propose(targets, values, signatures, calldatas, "");
     await expect(tx).to.be.revertedWith(
       "proposer votes below proposal threshold"
     );
-    data = token.interface.encodeFunctionData("mint", [
-      accounts.deployer,
-      ethers.utils.parseEther("1"),
-    ]);
-    await safeExecuteByOwner(safe, accounts.deployer, token.address, data);
-
+    await token.mint(accounts.deployer, ethers.utils.parseEther("1"));
     // with this new token, accounts.deployer has reached the threshold, and can create a proposal
     await decisionEngine.propose(targets, values, signatures, calldatas, "");
   });
@@ -128,13 +110,14 @@ describe("Example DAO with ERC20Snapshot Token", () => {
     let tx;
     let receipt;
 
-    // const { targets, values, signatures, calldatas } = NOOP_PROPOSAL;
+    await token.mint(accounts.deployer, ethers.utils.parseEther("1"));
+
     const {
       targets,
       values,
       signatures,
       calldatas,
-    } = ProposalToMint10TokensToAddress1;
+    } = await exampleProposalData();
 
     tx = await decisionEngine.propose(
       targets,
@@ -157,7 +140,7 @@ describe("Example DAO with ERC20Snapshot Token", () => {
     expect(onChainProposalState).to.equal(STATE_PENDING);
 
     // proposal needs to be activated before voting, so we mine a block
-    ethers.provider.send("evm_mine", []);
+    await mineABlock();
 
     // vote for the proposal
     await decisionEngine.castVote(proposalId, YAY);
@@ -171,21 +154,16 @@ describe("Example DAO with ERC20Snapshot Token", () => {
     // wait for the period to end
     for (let step = 0; step < 10; step += 1) {
       // eslint-disable-next-line no-await-in-loop
-      await ethers.provider.send("evm_mine", []);
+      await mineABlock();
     }
 
     onChainProposalState = await decisionEngine.state(proposalId);
 
-    // no need to approve in this test because the DecisionEngine is the only owner in the Safe
-    // (if the DecisionEngine would only be one of the signers of the Safe, we would only approve the Hashh)
-    // await decisionEngine.approveHash(proposalId)
-
-    expect(await token.balanceOf(accounts.address1)).to.equal(0);
     tx = await decisionEngine.execute(proposalId);
     receipt = await tx.wait();
     expect(receipt.events[receipt.events.length - 1].event).to.equal(
       "ProposalExecuted"
     );
-    expect(await token.balanceOf(accounts.address1)).to.equal(10);
+    // TODO: check the execution on the mock contract
   });
 });
