@@ -2,15 +2,7 @@ pragma solidity ^0.7.3;
 
 import "hardhat/console.sol";
 import "../interfaces/IMiniMetoken.sol";
-
-interface IComp {
-  function getPriorVotes(address account, uint256 blockNumber)
-    external
-    view
-    returns (uint96);
-
-  function totalSupply() external pure returns (uint256);
-}
+import "../interfaces/IComp.sol";
 
 contract CompAdapter is IMiniMetoken {
   IComp public adapted;
