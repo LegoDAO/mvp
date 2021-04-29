@@ -8,7 +8,7 @@ import { IDAOConfig } from "../scripts/types";
 
 import { decisionEngineConfig } from "./utils";
 
-describe("DecisionEngine01 configuration and voting power", () => {
+describe("GovernorBravo configuration and voting power", () => {
   let decisionEngine: Contract;
   let safe: Contract;
   let token: Contract;

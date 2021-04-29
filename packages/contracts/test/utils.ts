@@ -64,7 +64,7 @@ export const STATE_PENDING = 0;
 export const STATE_ACTIVE = 1;
 
 export const decisionEngineConfig: IDecisionEngineConfig = {
-  type: "DecisionEngine01",
+  type: "GovernorBravo",
   proposalThreshold: 1, // in percentage
   quorumVotes: 4, // in percentage
   votingPeriod: 10, // in blocks

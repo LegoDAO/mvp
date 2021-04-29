@@ -8,9 +8,12 @@ import "../interfaces/IERC20Snapshot.sol";
 import "../interfaces/IGovernorBravoDecisionEngine.sol";
 
 /**
-This is a stripped-down version of [GovernorBravo contracts](https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/)
+This is a fork of [GovernorBravo contracts](https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/)
 
-- basically, we only kept the "propose - vote -execute" flow
+- timelock logic was removed, basically, we only kept the "propose - vote -execute" flow
+- change the semantics of `queue` so that is queues the transaction for execution in the Gnosis safe (by alling `approveHash`)
+- change the semantics of `execute` so the proposal will be executed in the Gnosis Safe
+- change the semantics of `quorumvotes` and `proposalThreshold` to percentages, not absolute figures
 - add configuration options to the constructor:
   - `safe` -> the address of a Gnosis safe that holds the assets and will execut the proposals
   - `token` -> the address of a token that determines the Voting Power
@@ -22,21 +25,14 @@ This is a stripped-down version of [GovernorBravo contracts](https://github.com/
 - rename `timelock` to `safe`, and `comp` to `token`
 - upgrade to solidity 0.7.3, which required some changes in syntax
 
-- call `token.balanceOfAt()` instead of `token.getPriorVotes()`
-- base all voting logic on the basis of the voting power distribution at proposal creation
-  (GovernorAlpha checks the voting proposalThreshold at the block bf proposal creation, and counts the votes
-  from the start time of the proposal)
-- change the semantics of `quorumvotes` and `proposalThreshold` to percentages, not absolute figures
+- call `token.balanceOfAt()` instead of `token.getPriorVotes()` <--- TBD: THIS MAY NOT HAVE BEEN NECESSARY
 
-- change the semantics of `queue` so that is queues the transaction for execution in the Gnosis safe (by alling `approveHash`)
-- change the semantics of `execute` so the proposal will be executed in the Gnosis Safe
--
 - (todo: removed the logic related to timelocks, because in Lego this kind of safety mechanism has a better place on the Gnosis Safe )
 - (todo: removed the logic related to the guardian, becuase in the Lego Architecture this kind of permissioning is easier handled on the Gnosis Safe)
 - (todo: removed the delegator pattern, and use openzeppelin style proxies instead)d
- */
+*/
 
-contract DecisionEngine01 is IGovernorBravoDecisionEngine {
+contract GovernorBravo is IGovernorBravoDecisionEngine {
   using SafeMath for uint256;
   /// @notice The name of this contract
   string public constant NAME = "Lego Decision Engine";

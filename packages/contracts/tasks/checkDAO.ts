@@ -16,7 +16,7 @@ task(
     const safe = await hre.ethers.getContractAt("GnosisSafe", taskArgs.safe);
     const token = await hre.ethers.getContractAt("MiniMeToken", taskArgs.token);
     const decisionEngine = await hre.ethers.getContractAt(
-      "DecisionEngine01",
+      "GovernorBravo",
       taskArgs.decisionEngine
     );
     console.log(`------------- LEGO DAO INFO -----------------------------`);

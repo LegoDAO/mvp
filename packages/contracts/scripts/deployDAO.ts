@@ -8,9 +8,7 @@ export async function deployDAO(
   daoConfig: IDAOConfig
 ): Promise<ILegoDeployment> {
   let tokenAdapter;
-  const DecisionEngine = await hre.ethers.getContractFactory(
-    "DecisionEngine01"
-  );
+  const DecisionEngine = await hre.ethers.getContractFactory("GovernorBravo");
   const decisionEngine = await DecisionEngine.deploy();
   const safe = await hre.ethers.getContractAt(
     "GnosisSafe",
