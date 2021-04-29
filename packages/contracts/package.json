@@ -13,7 +13,8 @@
     "format": "prettier \"contracts/**/*.sol\" \"**/*.ts\" \"**/*.md\" \"**/*.yml\"",
     "test": "npx hardhat test",
     "test:watch": "npx hardhat watch test",
-    "coverage": "yarn build && npx hardhat coverage --temp artifacts --network coverage"
+    "coverage": "yarn build && npx hardhat coverage --temp artifacts --network coverage",
+    "deployDAO": "npx hardhat deployDemoDAO"
   },
   "dependencies": {
     "@gnosis.pm/safe-contracts": "^1.2.0",

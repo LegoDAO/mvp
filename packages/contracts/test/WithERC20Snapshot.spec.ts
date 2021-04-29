@@ -1,6 +1,11 @@
-import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { Contract, Transaction, utils } from "ethers";
+import hre, { ethers, deployments, getNamedAccounts } from "hardhat";
+
+import { deployDAO } from "../scripts/deployDAO";
+import { deploySafe } from "../scripts/deploySafe";
+import { IDAOConfig } from "../scripts/types";
+
 import {
   YAY,
   decisionEngineConfig,
@@ -9,9 +14,6 @@ import {
   STATE_PENDING,
   STATE_ACTIVE,
 } from "./utils";
-import { deployDAO } from "../scripts/deployDAO";
-import { deploySafe } from "../scripts/deploySafe";
-import { IDAOConfig } from "../scripts/types";
 
 const parseEther = ethers.utils.parseEther;
 
@@ -28,7 +30,6 @@ describe("Example DAO with ERC20Snapshot Token", () => {
   let signers: any[];
   let signer: any;
   let fixture: any;
-  let ProposalToMint10TokensToAddress1: any;
 
   beforeEach(async () => {
     fixture = await deployments.fixture(["ERC20SnapshotExample"]);
@@ -36,7 +37,7 @@ describe("Example DAO with ERC20Snapshot Token", () => {
       "ERC20SnapshotExample",
       fixture.ERC20SnapshotExample.address
     );
-    safe = (await deploySafe({})).safe;
+    safe = (await deploySafe(hre, {})).safe;
 
     const daoConfig: IDAOConfig = {
       safe: { address: safe.address },
@@ -44,7 +45,7 @@ describe("Example DAO with ERC20Snapshot Token", () => {
       decisionEngine: decisionEngineConfig,
     };
 
-    const deployment = await deployDAO(daoConfig);
+    const deployment = await deployDAO(hre, daoConfig);
     decisionEngine = deployment.decisionEngine;
 
     accounts = await getNamedAccounts();

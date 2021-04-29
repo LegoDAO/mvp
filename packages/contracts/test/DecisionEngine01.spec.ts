@@ -1,10 +1,12 @@
-import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { Contract, utils } from "ethers";
-import { decisionEngineConfig } from "./utils";
-import { IDAOConfig } from "../scripts/types";
+import hre, { ethers, deployments, getNamedAccounts } from "hardhat";
+
 import { deployDAO } from "../scripts/deployDAO";
 import { deploySafe } from "../scripts/deploySafe";
+import { IDAOConfig } from "../scripts/types";
+
+import { decisionEngineConfig } from "./utils";
 
 describe("DecisionEngine01 configuration and voting power", () => {
   let decisionEngine: Contract;
@@ -21,7 +23,7 @@ describe("DecisionEngine01 configuration and voting power", () => {
       "ERC20SnapshotExample",
       fixture.ERC20SnapshotExample.address
     );
-    const safeDeployment = await deploySafe({});
+    const safeDeployment = await deploySafe(hre, {});
     safe = safeDeployment.safe;
 
     const daoConfig: IDAOConfig = {
@@ -30,7 +32,7 @@ describe("DecisionEngine01 configuration and voting power", () => {
       decisionEngine: decisionEngineConfig,
     };
 
-    const deployment = await deployDAO(daoConfig);
+    const deployment = await deployDAO(hre, daoConfig);
     decisionEngine = deployment.decisionEngine;
 
     accounts = await getNamedAccounts();

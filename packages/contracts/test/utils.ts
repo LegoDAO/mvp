@@ -1,18 +1,17 @@
 import { Contract, Transaction } from "ethers";
-import { encodeParameters } from "../scripts/utils";
 import hre, { ethers, deployments } from "hardhat";
-import { IDAOConfig, IDecisionEngineConfig } from "../scripts/types";
+
 import { deployDAO } from "../scripts/deployDAO";
 import { deploySafe } from "../scripts/deploySafe";
+import { IDAOConfig, IDecisionEngineConfig } from "../scripts/types";
+import { encodeParameters } from "../scripts/utils";
 
-export async function exampleProposalData() {
+export async function exampleProposalData(): Promise<any> {
   const fixture = await hre.deployments.fixture(["MockContract"]);
   const mock = await ethers.getContractAt(
     "MockContract",
     fixture.MockContract.address
   );
-  const complexInterface = await deployments.getArtifact("ComplexInterface");
-  const complex = await ethers.getContractAt("ComplexInterface", mock.address);
 
   await mock.givenAnyReturn(encodeParameters(["bool"], ["true"]));
 
@@ -73,13 +72,13 @@ export const decisionEngineConfig: IDecisionEngineConfig = {
   proposalMaxOperations: 10,
 };
 
-export async function createExampleDAO() {
+export async function createExampleDAO(): Promise<any> {
   const fixture = await deployments.fixture(["MiniMeToken"]);
   const token = await ethers.getContractAt(
     "MiniMeToken",
     fixture.MiniMeToken.address
   );
-  const safeDeployment = await deploySafe({});
+  const safeDeployment = await deploySafe(hre, {});
   const safe = safeDeployment.safe;
 
   const daoConfig: IDAOConfig = {
@@ -88,6 +87,6 @@ export async function createExampleDAO() {
     decisionEngine: decisionEngineConfig,
   };
 
-  const deployment = await deployDAO(daoConfig);
+  const deployment = await deployDAO(hre, daoConfig);
   return deployment;
 }

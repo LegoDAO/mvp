@@ -1,8 +1,8 @@
+import { it } from "@ungap/global-this";
 import { expect } from "chai";
+import { Contract, Signer, utils } from "ethers";
 import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { Address } from "hardhat-deploy/types";
-import { Contract, Signer, utils } from "ethers";
-import { it } from "@ungap/global-this";
 
 // eslint-disable-next-line func-names
 describe("Gnosis safe contract", function () {

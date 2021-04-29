@@ -1,11 +1,13 @@
-import { ethers, deployments, getNamedAccounts, getChainId } from "hardhat";
 import { expect } from "chai";
 import { Contract, Transaction, Signer } from "ethers";
-import { safeExecuteByOwner, encodeParameters } from "../scripts/utils";
-import { IDAOConfig, IDecisionEngineConfig } from "../scripts/types";
-import { createAProposal, mineABlock } from "./utils";
+import hre, { ethers, deployments, getNamedAccounts } from "hardhat";
+
 import { deployDAO } from "../scripts/deployDAO";
 import { deploySafe } from "../scripts/deploySafe";
+import { IDAOConfig, IDecisionEngineConfig } from "../scripts/types";
+import { encodeParameters } from "../scripts/utils";
+
+import { createAProposal, mineABlock } from "./utils";
 
 const STATE_PENDING = 0;
 const STATE_ACTIVE = 1;
@@ -33,14 +35,12 @@ describe("Example DAO with Minime Token", () => {
   let NOOP_PROPOSAL: any;
 
   beforeEach(async () => {
-    const { deployer } = await getNamedAccounts();
-
     fixture = await deployments.fixture(["MiniMeToken"]);
     token = await ethers.getContractAt(
       "MiniMeToken",
       fixture.MiniMeToken.address
     );
-    const safeDeployment = await deploySafe({});
+    const safeDeployment = await deploySafe(hre, {});
     safe = safeDeployment.safe;
 
     const daoConfig: IDAOConfig = {
@@ -49,7 +49,7 @@ describe("Example DAO with Minime Token", () => {
       decisionEngine: decisionEngineConfig,
     };
 
-    const deployment = await deployDAO(daoConfig);
+    const deployment = await deployDAO(hre, daoConfig);
     decisionEngine = deployment.decisionEngine;
 
     accounts = await getNamedAccounts();

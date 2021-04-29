@@ -1,11 +1,13 @@
-import { ethers, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
-import { IDAOConfig, IDecisionEngineConfig } from "../scripts/types";
 import { Contract, Signer } from "ethers";
+import hre, { ethers, getNamedAccounts } from "hardhat";
+
 import { deployDAO } from "../scripts/deployDAO";
 import { deploySafe } from "../scripts/deploySafe";
-import { mineABlock, STATE_ACTIVE, STATE_PENDING } from "./utils";
+import { IDAOConfig, IDecisionEngineConfig } from "../scripts/types";
 import { encodeParameters } from "../scripts/utils";
+
+import { mineABlock } from "./utils";
 
 const parseEther = ethers.utils.parseEther;
 
@@ -25,9 +27,7 @@ describe("Example DAO with Comp Token", () => {
   let tokenAdapter: Contract;
   let accounts: any;
   let signers: Signer[];
-  let signer: Signer;
   let signer1: Signer;
-  let fixture: any;
   let NOOP_PROPOSAL: any;
 
   beforeEach(async () => {
@@ -37,7 +37,7 @@ describe("Example DAO with Comp Token", () => {
     token = await Comp.deploy(deployer);
     tokenAdapter = await CompAdapter.deploy(token.address);
 
-    const safeDeployment = await deploySafe({});
+    const safeDeployment = await deploySafe(hre, {});
     safe = safeDeployment.safe;
     const daoConfig: IDAOConfig = {
       safe: { address: safe.address },
@@ -45,11 +45,10 @@ describe("Example DAO with Comp Token", () => {
       decisionEngine: decisionEngineConfig,
     };
 
-    const deployment = await deployDAO(daoConfig);
+    const deployment = await deployDAO(hre, daoConfig);
     decisionEngine = deployment.decisionEngine;
     accounts = await getNamedAccounts();
     signers = await ethers.getSigners();
-    signer = signers[0];
     signer1 = signers[1];
 
     NOOP_PROPOSAL = {

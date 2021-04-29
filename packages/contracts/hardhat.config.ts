@@ -1,3 +1,4 @@
+import { config as dotEnvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/types";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
@@ -6,7 +7,7 @@ import "hardhat-typechain";
 import "hardhat-deploy";
 import "hardhat-watcher";
 import "solidity-coverage";
-import { config as dotEnvConfig } from "dotenv";
+import "./tasks";
 
 dotEnvConfig();
 
@@ -42,6 +43,9 @@ const config: HardhatUserConfig = {
     coverage: {
       url: "http://127.0.0.1:8555",
     },
+    ganache: {
+      url: "http://127.0.0.1:8545",
+    },
   },
   etherscan: {
     apiKey: ETHERSCAN_API_KEY,
@@ -57,7 +61,7 @@ const config: HardhatUserConfig = {
   watcher: {
     test: {
       tasks: ["test"],
-      files: ["./contracts", "./deploy", "./scripts", "./test"],
+      files: ["./contracts", "./deploy", "./scripts", "./test", "./tasks"],
       verbose: true,
     },
   },

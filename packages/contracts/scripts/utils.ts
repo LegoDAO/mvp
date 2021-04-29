@@ -1,14 +1,13 @@
+import { Contract, Transaction, ethers } from "ethers";
 import { Address } from "hardhat-deploy/types";
-import { Contract, Transaction } from "ethers";
-import { ethers } from "hardhat";
 
 export const ZEROADDRESS = "0x0000000000000000000000000000000000000000";
 
-export const safeSwapOwner = async (
+export async function safeSwapOwner(
   safe: Contract,
   prevOwner: Address,
   newOwner: Address
-) => {
+): Promise<void> {
   const sentinel = "0x0000000000000000000000000000000000000001";
   const data = await safe.interface.encodeFunctionData("swapOwner", [
     sentinel,
@@ -37,14 +36,14 @@ export const safeSwapOwner = async (
   if (receipt.events[0].event === "ExecutionFailure") {
     throw Error("ExecutionFailure when trying to execute safeSwapOwner(...)");
   }
-};
+}
 
-export const safeAddOwner = async (
+export async function safeAddOwner(
   safe: Contract,
   executingOwner: Address,
   newOwner: Address,
-  threshold: number = 1
-) => {
+  threshold = 1
+): Promise<void> {
   //     function addOwnerWithThreshold(address owner, uint256 _threshold)
 
   const data = await safe.interface.encodeFunctionData(
@@ -52,14 +51,14 @@ export const safeAddOwner = async (
     [newOwner, threshold]
   );
   return safeExecuteByOwner(safe, executingOwner, safe.address, data);
-};
+}
 
-export const safeExecuteByOwner = async (
+export async function safeExecuteByOwner(
   safe: Contract,
   owner: Address,
   to: Address,
   data: string
-) => {
+): Promise<void> {
   const sigs =
     `0x000000000000000000000000${owner.replace(
       "0x",
@@ -83,9 +82,9 @@ export const safeExecuteByOwner = async (
   if (receipt.events[0].event === "ExecutionFailure") {
     throw Error("ExecutionFailure when trying to safeExecuteByOwner");
   }
-};
+}
 
-export function encodeParameters(types: string[], values: string[]) {
+export function encodeParameters(types: string[], values: string[]): string {
   const abi = new ethers.utils.AbiCoder();
   return abi.encode(types, values);
 }

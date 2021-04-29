@@ -1,5 +1,6 @@
-import { ITokenConfig } from "./types";
 import { Contract } from "ethers";
+
+import { ITokenConfig } from "./types";
 
 export async function deployToken(
   tokenConfig: ITokenConfig

@@ -7,10 +7,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const { deployer } = await getNamedAccounts();
 
-  await deploy("LegoToken", {
+  await deploy("GnosisSafeProxyFactory", {
     from: deployer,
     log: true,
+    args: [],
   });
 };
 export default func;
-func.tags = ["LegoToken"];
+func.tags = ["GnosisSafeProxyFactory"];
